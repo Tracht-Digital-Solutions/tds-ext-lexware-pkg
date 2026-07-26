@@ -26,9 +26,9 @@ export default function WidgetBody() {
   if (!data) return <p className="tds-widget__metric">…</p>;
 
   return (
-    <div className="widget__body">
+    <div className="tds-stack">
       <p className="tds-widget__metric">{data.invoiceCount}</p>
-      <p className="widget__label">
+      <p className="marginalia">
         {data.configured ? "Rechnungen an Lexware" : "Lexware nicht konfiguriert"}
       </p>
     </div>

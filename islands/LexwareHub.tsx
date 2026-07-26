@@ -140,7 +140,7 @@ function CustomersTab() {
         <ul className="lx-list">
           {customers.map((c) => (
             <li key={c.id}>
-              <button type="button" className="lx-list__item" onClick={() => void open(c.id)}>
+              <button type="button" className="tds-list__row" onClick={() => void open(c.id)}>
                 <strong>{c.name}</strong>
                 <span className="opacity-70"> · {c.project_count ?? 0} Projekte</span>
                 {c.lexware_contact_id ? <span className="chip chip--success"> Lexware</span> : null}

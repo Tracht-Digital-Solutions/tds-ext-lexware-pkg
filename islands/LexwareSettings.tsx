@@ -121,7 +121,7 @@ export default function LexwareSettings() {
       {status ? <p className="tds-alert" role="status">{status}</p> : null}
       <div className="flex items-center gap-3">
         <button type="button" onClick={save} disabled={busy}>Speichern</button>
-        <button type="button" className="btn-secondary" onClick={test}>Verbindung testen</button>
+        <button type="button" className="btn btn-ghost" onClick={test}>Verbindung testen</button>
       </div>
       {testResult ? <p className="text-sm opacity-80">{testResult}</p> : null}
     </div>
