@@ -143,7 +143,7 @@ function CustomersTab() {
               <button type="button" className="lx-list__item" onClick={() => void open(c.id)}>
                 <strong>{c.name}</strong>
                 <span className="opacity-70"> · {c.project_count ?? 0} Projekte</span>
-                {c.lexware_contact_id ? <span className="chip chip--ok"> Lexware</span> : null}
+                {c.lexware_contact_id ? <span className="chip chip--success"> Lexware</span> : null}
               </button>
             </li>
           ))}
@@ -405,7 +405,7 @@ function ContactsTab() {
               <td>{l.source_type === "ticket" ? "Ticket" : "Kontaktformular"}</td>
               <td>
                 {l.lexware_contact_id ? (
-                  <span className="chip chip--ok">in Lexware</span>
+                  <span className="chip chip--success">in Lexware</span>
                 ) : (
                   <button type="button" onClick={() => void push(l)}>Anlegen</button>
                 )}
