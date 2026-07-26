@@ -157,7 +157,7 @@ function CustomersTab() {
           <input type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
           <button type="button" onClick={addCustomer}>Anlegen</button>
         </div>
-        {status ? <p className="status-pill status-pill--info">{status}</p> : null}
+        {status ? <p className="tds-alert" role="status">{status}</p> : null}
       </div>
 
       <div>
@@ -319,7 +319,7 @@ function TimeTab() {
         <button type="button" onClick={() => void load()}>Filtern</button>
         <ProjectPicker projectId={projectId} onChange={setProjectId} />
       </div>
-      {status ? <p className="status-pill status-pill--info">{status}</p> : null}
+      {status ? <p className="tds-alert" role="status">{status}</p> : null}
       <table className="lx-table">
         <thead>
           <tr>
@@ -385,7 +385,7 @@ function ContactsTab() {
   return (
     <div className="lexware-contacts">
       <p className="opacity-80">Kontakte aus Kontaktanfragen &amp; Tickets als Lexware-Kontakte anlegen.</p>
-      {status ? <p className="status-pill status-pill--info">{status}</p> : null}
+      {status ? <p className="tds-alert" role="status">{status}</p> : null}
       <table className="lx-table">
         <thead>
           <tr>
@@ -481,7 +481,7 @@ function InvoicesTab() {
         </label>
         <button type="button" onClick={exportInvoice} disabled={busy}>Rechnung erstellen</button>
       </div>
-      {status ? <p className="status-pill status-pill--info">{status}</p> : null}
+      {status ? <p className="tds-alert" role="status">{status}</p> : null}
 
       <h5>Bisherige Exporte</h5>
       <table className="lx-table">

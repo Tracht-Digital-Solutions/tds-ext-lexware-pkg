@@ -22,12 +22,12 @@ export default function WidgetBody() {
       .catch(() => setError(true));
   }, []);
 
-  if (error) return <p className="widget__metric">—</p>;
-  if (!data) return <p className="widget__metric">…</p>;
+  if (error) return <p className="tds-widget__metric">—</p>;
+  if (!data) return <p className="tds-widget__metric">…</p>;
 
   return (
     <div className="widget__body">
-      <p className="widget__metric">{data.invoiceCount}</p>
+      <p className="tds-widget__metric">{data.invoiceCount}</p>
       <p className="widget__label">
         {data.configured ? "Rechnungen an Lexware" : "Lexware nicht konfiguriert"}
       </p>

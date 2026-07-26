@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Spinner } from "@tracht-digital-solutions/tds-shared/components";
 
 interface Masked {
   key: string;
@@ -86,7 +87,7 @@ export default function LexwareSettings() {
 
   const secretHint = keyState?.configured ? `konfiguriert (…${keyState.last4 ?? "????"})` : "nicht konfiguriert";
 
-  if (!loaded) return <p>Wird geladen …</p>;
+  if (!loaded) return <p role="status"><Spinner /></p>;
 
   return (
     <div className="lexware-settings space-y-4">
@@ -117,7 +118,7 @@ export default function LexwareSettings() {
         </label>
       </div>
 
-      {status ? <p className="status-pill status-pill--info">{status}</p> : null}
+      {status ? <p className="tds-alert" role="status">{status}</p> : null}
       <div className="flex items-center gap-3">
         <button type="button" onClick={save} disabled={busy}>Speichern</button>
         <button type="button" className="btn-secondary" onClick={test}>Verbindung testen</button>
