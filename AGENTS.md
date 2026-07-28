@@ -60,11 +60,50 @@ An **admin-only** extension (`lexware:read` / `lexware:write`) with four surface
 - Release bumps `package.json` + `composer.json` in lockstep; the pushed
   **annotated** tag is the Composer release ref.
 
+## Tests
+
+```bash
+npm run test:run    # vitest, 150 tests (jsdom per-file via a @vitest-environment docblock)
+```
+
+- `islands/LexwareHub.test.tsx` — the four tabs. Two things here reach out of the
+  browser and cannot be undone from this UI, so they carry the sharpest
+  assertions: **`finalize`** (it turns a draft into a real Lexware invoice —
+  pinned to default OFF, to travel exactly as checked, and to be unclickable
+  twice while in flight) and **push-contact** (the `disabled` state on a
+  customer that already has a `lexware_contact_id` is the only guard against a
+  duplicate contact). The picker's `onChange(null)` on a customer switch is
+  pinned too — a stale project id would bill customer A's time under B.
+- `islands/LexwareSettings.test.tsx` — the settings-store secret contract: the
+  key comes back masked (`configured` + `last4`, never the value) and **a blank
+  key on save means "keep the existing one"**. Also that a `200 {ok:false}` from
+  `/lexware/admin/test` is NOT reported as a working connection.
+- `islands/WidgetBody.test.tsx` — the widget's three states. `—` on a failure,
+  never `0`: the latter claims nothing was ever exported.
+- `src/index.test.ts` + `tests/packaging.test.ts` — the manifest as a product
+  build sees it (ids, gating, i18n parity, real `composeExtensions` collision
+  behaviour) and that every specifier resolves to a file that is both exported
+  and inside the published `files` allow-list.
+
+Error-path tests deliberately answer with a POPULATED body and a non-OK status.
+Against an EMPTY error body `res.ok ? (await res.json()).x ?? [] : []` and a bare
+`await res.json()` are indistinguishable, so the ok-check could be deleted with
+no test noticing.
+
+`tests/packaging.test.ts` pins the version to the **0.1** line, because
+`tds-admin-frontend` caret-pins `^0.1.1` and under 0.x a caret means
+`>=0.1.1 <0.2.0` — a 0.2.0 here silently stops reaching the product. (The root
+`CLAUDE.md` says all extensions stay in `0.1.x`; that is not universal —
+support-tickets is 0.7.x and contact-tickets 0.2.x. The real rule is: never
+leave the minor line your consumers pin.)
+
+Verified by mutation: 65 deliberate breakages introduced, 65 caught.
+
 ## Commands
 
 ```bash
 composer install && composer test    # phpunit: Module RBAC + builder units
-npm install --no-package-lock && npm run type-check && npm run build
+npm install --no-package-lock && npm run type-check && npm run test:run && npm run build
 ```
 
 DB-backed integration runs against real MariaDB/MySQL only when `TDS_TEST_DB_DSN`
