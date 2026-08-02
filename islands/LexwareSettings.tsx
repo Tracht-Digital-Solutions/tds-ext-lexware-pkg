@@ -87,7 +87,7 @@ export default function LexwareSettings() {
 
   const secretHint = keyState?.configured ? `konfiguriert (…${keyState.last4 ?? "????"})` : "nicht konfiguriert";
 
-  if (!loaded) return <p role="status"><Spinner /></p>;
+  if (!loaded) return <p><Spinner /></p>;
 
   return (
     <div className="lexware-settings space-y-4">

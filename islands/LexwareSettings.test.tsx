@@ -72,7 +72,7 @@ describe("loading", () => {
 
   it("shows a loading line until the settings arrive", () => {
     render(<LexwareSettings />);
-    expect(screen.getByText("Wird geladen …")).toBeTruthy();
+    expect(screen.getByLabelText("Wird geladen")).toBeTruthy();
   });
 
   it("fills the fields from the stored values", async () => {
@@ -176,7 +176,7 @@ describe("loading", () => {
     getReply = { status: 500, body: {} };
     render(<LexwareSettings />);
     await screen.findByText("Fehler (HTTP 500).");
-    expect(screen.queryByText("Wird geladen …")).toBeNull();
+    expect(screen.queryByLabelText("Wird geladen")).toBeNull();
   });
 
   it("does NOT apply values carried by a non-OK response", async () => {

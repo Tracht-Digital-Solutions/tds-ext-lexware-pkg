@@ -42,7 +42,7 @@ describe("the widget", () => {
 
   it("shows a placeholder before the request resolves", () => {
     render(<WidgetBody />);
-    expect(screen.getByText("…")).toBeTruthy();
+    expect(document.querySelector('[aria-busy="true"]')).toBeTruthy();
   });
 
   it("renders the exported invoice count", async () => {
