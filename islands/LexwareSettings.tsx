@@ -93,7 +93,7 @@ export default function LexwareSettings() {
     <div className="lexware-settings space-y-4">
       <label className="block">
         <span className="text-sm">API-Key <em className="opacity-60">({secretHint})</em></span>
-        <input
+        <input className="field-boxed"
           type="password"
           value={keyInput}
           onChange={(e) => setKeyInput(e.target.value)}
@@ -104,23 +104,23 @@ export default function LexwareSettings() {
 
       <label className="block">
         <span className="text-sm">API-URL</span>
-        <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.lexware.io/v1" />
+        <input className="field-boxed" type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.lexware.io/v1" />
       </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="text-sm">Standard-Stundensatz (netto)</span>
-          <input type="number" min="0" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="0" />
+          <input className="field-boxed" type="number" min="0" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="0" />
         </label>
         <label className="block">
           <span className="text-sm">Steuersatz (%)</span>
-          <input type="number" min="0" step="0.1" value={tax} onChange={(e) => setTax(e.target.value)} placeholder="19" />
+          <input className="field-boxed" type="number" min="0" step="0.1" value={tax} onChange={(e) => setTax(e.target.value)} placeholder="19" />
         </label>
       </div>
 
       {status ? <p className="tds-alert" role="status">{status}</p> : null}
       <div className="flex items-center gap-3">
-        <button type="button" onClick={save} disabled={busy}>Speichern</button>
+        <button className="btn btn-primary" type="button" onClick={save} disabled={busy}>Speichern</button>
         <button type="button" className="btn btn-ghost" onClick={test}>Verbindung testen</button>
       </div>
       {testResult ? <p className="text-sm opacity-80">{testResult}</p> : null}

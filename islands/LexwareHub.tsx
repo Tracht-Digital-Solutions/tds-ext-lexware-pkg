@@ -61,14 +61,14 @@ export default function LexwareHub() {
   ];
   return (
     <div className="lexware-hub">
-      <nav className="lexware-tabs" role="tablist">
+      <nav className="tds-toolbar" role="tablist">
         {tabs.map(([id, label]) => (
           <button
             key={id}
             type="button"
             role="tab"
             aria-selected={tab === id}
-            className={tab === id ? "tab tab--active" : "tab"}
+            className={tab === id ? "chip chip-active" : "chip"}
             onClick={() => setTab(id)}
           >
             {label}
@@ -137,10 +137,10 @@ function CustomersTab() {
     <div className="lexware-customers grid gap-4 md:grid-cols-2">
       <div>
         <h4>Kunden</h4>
-        <ul className="lx-list">
+        <ul className="tds-list">
           {customers.map((c) => (
             <li key={c.id}>
-              <button type="button" className="tds-list__row" onClick={() => void open(c.id)}>
+              <button type="button" className="btn btn-ghost tds-list__row" onClick={() => void open(c.id)}>
                 <strong>{c.name}</strong>
                 <span className="opacity-70"> · {c.project_count ?? 0} Projekte</span>
                 {c.lexware_contact_id ? <span className="chip chip--success"> Lexware</span> : null}
@@ -150,12 +150,12 @@ function CustomersTab() {
           {customers.length === 0 ? <li className="opacity-70">Noch keine Kunden.</li> : null}
         </ul>
 
-        <div className="lx-form">
+        <div className="tds-card tds-stack">
           <h5>Neuer Kunde</h5>
-          <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-          <input type="email" placeholder="E-Mail (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
-          <button type="button" onClick={addCustomer}>Anlegen</button>
+          <input className="field-boxed" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="field-boxed" type="email" placeholder="E-Mail (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
+          <button className="btn btn-primary" type="button" onClick={addCustomer}>Anlegen</button>
         </div>
         {status ? <p className="tds-alert" role="status">{status}</p> : null}
       </div>
@@ -192,12 +192,12 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
         {customer.email ?? "keine E-Mail"} ·{" "}
         {customer.lexware_contact_id ? `Lexware-Kontakt ${customer.lexware_contact_id}` : "nicht in Lexware"}
       </p>
-      <button type="button" onClick={onPush} disabled={customer.lexware_contact_id !== null}>
+      <button className="btn btn-ghost" type="button" onClick={onPush} disabled={customer.lexware_contact_id !== null}>
         {customer.lexware_contact_id ? "In Lexware angelegt" : "Als Lexware-Kontakt anlegen"}
       </button>
 
       <h5>Projekte</h5>
-      <ul className="lx-list">
+      <ul className="tds-list">
         {(customer.projects ?? []).map((p) => (
           <li key={p.id}>
             {p.title}
@@ -207,10 +207,10 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
         ))}
         {(customer.projects ?? []).length === 0 ? <li className="opacity-70">Noch keine Projekte.</li> : null}
       </ul>
-      <div className="lx-form">
-        <input type="text" placeholder="Projekttitel" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input type="number" min="0" step="0.01" placeholder="Stundensatz (optional, überschreibt Kunde)" value={rate} onChange={(e) => setRate(e.target.value)} />
-        <button type="button" onClick={addProject}>Projekt anlegen</button>
+      <div className="tds-card tds-stack">
+        <input className="field-boxed" type="text" placeholder="Projekttitel" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz (optional, überschreibt Kunde)" value={rate} onChange={(e) => setRate(e.target.value)} />
+        <button className="btn btn-primary" type="button" onClick={addProject}>Projekt anlegen</button>
       </div>
     </div>
   );
@@ -240,7 +240,7 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
 
   return (
     <div className="lx-picker flex gap-3">
-      <select
+      <select className="field-boxed"
         value={customerId ?? ""}
         onChange={(e) => {
           const v = e.target.value === "" ? null : Number(e.target.value);
@@ -255,7 +255,7 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
           </option>
         ))}
       </select>
-      <select value={projectId ?? ""} onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} disabled={customerId === null}>
+      <select className="field-boxed" value={projectId ?? ""} onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} disabled={customerId === null}>
         <option value="">Projekt …</option>
         {projects.map((p) => (
           <option key={p.id} value={p.id}>
@@ -310,17 +310,17 @@ function TimeTab() {
       <div className="lx-form flex flex-wrap gap-3 items-end">
         <label>
           <span className="text-sm">Von</span>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input className="field-boxed" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
         <label>
           <span className="text-sm">Bis</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input className="field-boxed" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button type="button" onClick={() => void load()}>Filtern</button>
+        <button className="btn btn-primary" type="button" onClick={() => void load()}>Filtern</button>
         <ProjectPicker projectId={projectId} onChange={setProjectId} />
       </div>
       {status ? <p className="tds-alert" role="status">{status}</p> : null}
-      <table className="lx-table">
+      <table className="tds-table">
         <thead>
           <tr>
             <th>Datum</th>
@@ -336,7 +336,7 @@ function TimeTab() {
               <td>{e.note ?? "—"}</td>
               <td>{fmtHours(e.duration_minutes)} h</td>
               <td>
-                <button type="button" onClick={() => void assign(e.id)}>Zuordnen</button>
+                <button className="btn btn-primary" type="button" onClick={() => void assign(e.id)}>Zuordnen</button>
               </td>
             </tr>
           ))}
@@ -386,7 +386,7 @@ function ContactsTab() {
     <div className="lexware-contacts">
       <p className="opacity-80">Kontakte aus Kontaktanfragen &amp; Tickets als Lexware-Kontakte anlegen.</p>
       {status ? <p className="tds-alert" role="status">{status}</p> : null}
-      <table className="lx-table">
+      <table className="tds-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -407,7 +407,7 @@ function ContactsTab() {
                 {l.lexware_contact_id ? (
                   <span className="chip chip--success">in Lexware</span>
                 ) : (
-                  <button type="button" onClick={() => void push(l)}>Anlegen</button>
+                  <button className="btn btn-primary" type="button" onClick={() => void push(l)}>Anlegen</button>
                 )}
               </td>
             </tr>
@@ -469,22 +469,22 @@ function InvoicesTab() {
         <ProjectPicker projectId={projectId} onChange={setProjectId} />
         <label>
           <span className="text-sm">Von</span>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input className="field-boxed" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
         <label>
           <span className="text-sm">Bis</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input className="field-boxed" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={finalize} onChange={(e) => setFinalize(e.target.checked)} />
           <span className="text-sm">Finalisieren (echte Rechnung)</span>
         </label>
-        <button type="button" onClick={exportInvoice} disabled={busy}>Rechnung erstellen</button>
+        <button className="btn btn-primary" type="button" onClick={exportInvoice} disabled={busy}>Rechnung erstellen</button>
       </div>
       {status ? <p className="tds-alert" role="status">{status}</p> : null}
 
       <h5>Bisherige Exporte</h5>
-      <table className="lx-table">
+      <table className="tds-table">
         <thead>
           <tr>
             <th>Datum</th>
