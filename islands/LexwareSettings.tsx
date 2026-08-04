@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Spinner } from "@tracht-digital-solutions/tds-shared/components";
+import { Spinner, toast } from "@tracht-digital-solutions/tds-shared/components";
 
 interface Masked {
   key: string;
@@ -67,10 +67,10 @@ export default function LexwareSettings() {
     setBusy(false);
     if (res.ok) {
       setKeyInput("");
-      setStatus("Gespeichert.");
+      toast.success("Gespeichert.");
       void load();
     } else {
-      setStatus(`Fehler (HTTP ${res.status}).`);
+      toast.danger(`Speichern fehlgeschlagen (HTTP ${res.status}).`);
     }
   };
 
@@ -118,7 +118,9 @@ export default function LexwareSettings() {
         </label>
       </div>
 
-      {status ? <p className="tds-alert" role="status">{status}</p> : null}
+      {/* The load failure stays in-flow (persistent state); the save outcome
+          is a toast. Failures only, hence the danger hue. */}
+      {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
       <div className="flex items-center gap-3">
         <button className="btn btn-primary" type="button" onClick={save} disabled={busy}>Speichern</button>
         <button type="button" className="btn btn-ghost" onClick={test}>Verbindung testen</button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "@tracht-digital-solutions/tds-shared/components";
 
 const api = (path: string, init?: RequestInit) => fetch(path, { credentials: "include", ...init });
 
@@ -118,17 +119,20 @@ function CustomersTab() {
       setName("");
       setEmail("");
       setRate("");
+      toast.success("Kunde angelegt.");
       void load();
     } else {
-      setStatus(`Fehler (HTTP ${res.status}).`);
+      toast.danger(`Kunde konnte nicht angelegt werden (HTTP ${res.status}).`);
     }
   };
 
   const pushContact = async (id: number) => {
-    setStatus("Sende an Lexware …");
     const res = await api(`/lexware/customers/${id}/push-contact`, { method: "POST" });
     const d = await res.json().catch(() => ({}));
-    setStatus(res.ok ? "Kontakt in Lexware angelegt." : `Fehler: ${d.error ?? res.status}`);
+    // Was one info-hued banner for progress, success AND failure — so a
+    // rejected hand-off to Lexware read exactly like a successful one.
+    if (res.ok) toast.success("Kontakt in Lexware angelegt.");
+    else toast.danger(`Hand-off an Lexware fehlgeschlagen: ${d.error ?? `HTTP ${res.status}`}`);
     void open(id);
     void load();
   };
@@ -157,7 +161,8 @@ function CustomersTab() {
           <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
           <button className="btn btn-primary" type="button" onClick={addCustomer}>Anlegen</button>
         </div>
-        {status ? <p className="tds-alert" role="status">{status}</p> : null}
+        {/* Validation only now — outcomes go to the toast stack. */}
+        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
       </div>
 
       <div>
@@ -298,9 +303,9 @@ function TimeTab() {
     });
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
-      setStatus("Zugeordnet.");
+      toast.success("Zugeordnet.");
     } else {
-      setStatus(`Fehler (HTTP ${res.status}).`);
+      toast.danger(`Zuordnung fehlgeschlagen (HTTP ${res.status}).`);
     }
   };
 
@@ -319,7 +324,8 @@ function TimeTab() {
         <button className="btn btn-primary" type="button" onClick={() => void load()}>Filtern</button>
         <ProjectPicker projectId={projectId} onChange={setProjectId} />
       </div>
-      {status ? <p className="tds-alert" role="status">{status}</p> : null}
+      {/* Validation only now — outcomes go to the toast stack. */}
+        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
       <table className="tds-table">
         <thead>
           <tr>
@@ -365,7 +371,6 @@ function ContactsTab() {
   }, []);
 
   const push = async (lead: Lead) => {
-    setStatus("Sende an Lexware …");
     const res = await api("/lexware/leads/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -378,14 +383,16 @@ function ContactsTab() {
       }),
     });
     const d = await res.json().catch(() => ({}));
-    setStatus(res.ok ? "Kontakt angelegt." : `Fehler: ${d.error ?? res.status}`);
+    if (res.ok) toast.success("Kontakt angelegt.");
+    else toast.danger(`Hand-off an Lexware fehlgeschlagen: ${d.error ?? `HTTP ${res.status}`}`);
     void load();
   };
 
   return (
     <div className="lexware-contacts">
       <p className="opacity-80">Kontakte aus Kontaktanfragen &amp; Tickets als Lexware-Kontakte anlegen.</p>
-      {status ? <p className="tds-alert" role="status">{status}</p> : null}
+      {/* Validation only now — outcomes go to the toast stack. */}
+        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
       <table className="tds-table">
         <thead>
           <tr>
@@ -456,10 +463,10 @@ function InvoicesTab() {
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (res.ok) {
-      setStatus(`Rechnung erstellt (${fmtHours(d.totalMinutes ?? 0)} h, ${finalize ? "final" : "Entwurf"}).`);
+      toast.success(`Rechnung erstellt (${fmtHours(d.totalMinutes ?? 0)} h, ${finalize ? "final" : "Entwurf"}).`);
       void load();
     } else {
-      setStatus(`Fehler: ${d.error ?? `HTTP ${res.status}`}`);
+      toast.danger(`Rechnung fehlgeschlagen: ${d.error ?? `HTTP ${res.status}`}`);
     }
   };
 
@@ -481,7 +488,8 @@ function InvoicesTab() {
         </label>
         <button className="btn btn-primary" type="button" onClick={exportInvoice} disabled={busy}>Rechnung erstellen</button>
       </div>
-      {status ? <p className="tds-alert" role="status">{status}</p> : null}
+      {/* Validation only now — outcomes go to the toast stack. */}
+        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
 
       <h5>Bisherige Exporte</h5>
       <table className="tds-table">

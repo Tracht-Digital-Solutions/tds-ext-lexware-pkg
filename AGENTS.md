@@ -50,6 +50,14 @@ An **admin-only** extension (`lexware:read` / `lexware:write`) with four surface
   → unit-tested without the HTTP client. Invoice `address` uses `contactId` when
   the customer has a Lexware contact, else a free-text `name`.
 
+- **One toast stack, not four banners.** `LexwareHub` had FOUR separate `status`
+  states, each rendering its own `.tds-alert` next to a different panel — and
+  each funnelling progress, success AND failure through the same info hue, so a
+  rejected hand-off to Lexware ("Fehler: Lexware 401") read exactly like a
+  successful one. Outcomes now go to `toast` (tds-shared `>=0.16.0`) and the
+  remaining banners carry validation only, in `.tds-alert--danger`. Never mount
+  a `ToastHost` here — the frontend host owns the only one.
+
 ## Conventions baked in (from the template)
 
 - Depends on the **published** `tds-frontend-contract` `^1.0.0` — Composer via the

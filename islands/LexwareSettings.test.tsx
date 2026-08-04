@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LexwareSettings from "./LexwareSettings";
+import { TOAST_EVENT } from "@tracht-digital-solutions/tds-shared/toast";
 
 /**
  * The Lexware credentials panel, backed by the core runtime settings store
@@ -20,7 +21,15 @@ let getReply: { status: number; body: unknown } = { status: 200, body: { setting
 let putReply: { status: number; body: unknown } = { status: 200, body: {} };
 let testReply: { status: number; body: unknown } = { status: 200, body: { ok: true } };
 
+/** Outcomes are toasts now — collected off the `tds:toast` bus. */
+let toasts: Array<{ variant: string; message: string }> = [];
+const collectToast = (e: Event) => {
+  toasts.push((e as CustomEvent<{ variant: string; message: string }>).detail);
+};
+
 beforeEach(() => {
+  toasts = [];
+  window.addEventListener(TOAST_EVENT, collectToast);
   calls = [];
   getReply = { status: 200, body: { settings: [] } };
   putReply = { status: 200, body: {} };
@@ -40,7 +49,10 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  window.removeEventListener(TOAST_EVENT, collectToast);
+  cleanup();
+});
 
 const user = () => userEvent.setup({ delay: null });
 
@@ -275,7 +287,7 @@ describe("saving", () => {
     const u = await open();
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
-    expect(await screen.findByText("Gespeichert.")).toBeTruthy();
+    await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Gespeichert"))).toBe(true));
     await waitFor(() => expect(calls.filter((c) => c.method === "GET" && c.url === "/admin/settings/lexware")).toHaveLength(2));
   });
 
@@ -284,7 +296,7 @@ describe("saving", () => {
     const u = await open();
     await u.type(await screen.findByPlaceholderText("Neuen Schlüssel setzen (leer = behalten)"), "sk-new-key");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
-    await screen.findByText("Gespeichert.");
+    await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Gespeichert"))).toBe(true));
     expect(keyBox().value).toBe("");
   });
 
@@ -293,7 +305,7 @@ describe("saving", () => {
     const u = await open();
     await u.type(await screen.findByPlaceholderText("Neuen Schlüssel setzen (leer = behalten)"), "sk-new-key");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
-    expect(await screen.findByText("Fehler (HTTP 500).")).toBeTruthy();
+    await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("500"))).toBe(true));
     expect(keyBox().value).toBe("sk-new-key");
   });
 
@@ -302,7 +314,7 @@ describe("saving", () => {
     const u = await open();
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
-    await screen.findByText("Fehler (HTTP 403).");
+    await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("403"))).toBe(true));
     expect(calls.filter((c) => c.method === "GET" && c.url === "/admin/settings/lexware")).toHaveLength(1);
   });
 
@@ -311,7 +323,7 @@ describe("saving", () => {
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     const button = screen.getByRole("button", { name: "Speichern" }) as HTMLButtonElement;
     await u.click(button);
-    await screen.findByText("Gespeichert.");
+    await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Gespeichert"))).toBe(true));
     expect(button.disabled).toBe(false);
   });
 });
