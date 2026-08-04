@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LexwareHub from "./LexwareHub";
+import { TOAST_EVENT } from "@tracht-digital-solutions/tds-shared/toast";
 
 /**
  * The billing hub. Four tabs over the Lexware-Office integration.
@@ -73,7 +74,16 @@ const LEAD = {
   lexware_contact_id: null as string | null,
 };
 
+/** Outcomes are toasts now — the hub had FOUR in-flow banners, one per
+ *  panel; they are one stack now. Collected off the `tds:toast` bus. */
+let toasts: Array<{ variant: string; message: string }> = [];
+const collectToast = (e: Event) => {
+  toasts.push((e as CustomEvent<{ variant: string; message: string }>).detail);
+};
+
 beforeEach(() => {
+  toasts = [];
+  window.addEventListener(TOAST_EVENT, collectToast);
   calls = [];
   gate = null;
   handlers = [
@@ -101,7 +111,10 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  window.removeEventListener(TOAST_EVENT, collectToast);
+  cleanup();
+});
 
 const user = () => userEvent.setup({ delay: null });
 const sent = (method: string, match: RegExp) => calls.filter((c) => c.method === method && match.test(c.url));
@@ -257,7 +270,7 @@ describe("creating a customer", () => {
     respond(/^\/lexware\/customers$/, { error: "nope" }, 500, "POST");
     const u = await open();
     await fill(u, "Neu GmbH");
-    expect(await screen.findByText("Fehler (HTTP 500).")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("500"))).toBe(true));
     expect((screen.getByPlaceholderText("Name") as HTMLInputElement).value).toBe("Neu GmbH");
   });
 
@@ -265,7 +278,7 @@ describe("creating a customer", () => {
     respond(/^\/lexware\/customers$/, { error: "nope" }, 500, "POST");
     const u = await open();
     await fill(u, "Neu GmbH");
-    await screen.findByText("Fehler (HTTP 500).");
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("500"))).toBe(true));
     expect(sent("GET", /^\/lexware\/customers$/)).toHaveLength(1);
   });
 });
@@ -330,7 +343,7 @@ describe("a selected customer", () => {
     respond(/push-contact$/, { ok: true }, 200, "POST");
     const u = await openDetail();
     await u.click(screen.getByRole("button", { name: "Als Lexware-Kontakt anlegen" }));
-    expect(await screen.findByText("Kontakt in Lexware angelegt.")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Kontakt in Lexware angelegt"))).toBe(true));
     expect(sent("POST", /^\/lexware\/customers\/1\/push-contact$/)).toHaveLength(1);
   });
 
@@ -338,14 +351,14 @@ describe("a selected customer", () => {
     respond(/push-contact$/, { error: "Lexware 401" }, 502, "POST");
     const u = await openDetail();
     await u.click(screen.getByRole("button", { name: "Als Lexware-Kontakt anlegen" }));
-    expect(await screen.findByText("Fehler: Lexware 401")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("Lexware 401"))).toBe(true));
   });
 
   it("falls back to the status code when the error carries no message", async () => {
     respond(/push-contact$/, {}, 502, "POST");
     const u = await openDetail();
     await u.click(screen.getByRole("button", { name: "Als Lexware-Kontakt anlegen" }));
-    expect(await screen.findByText("Fehler: 502")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("502"))).toBe(true));
   });
 
   it("refreshes the detail after a push so the button locks", async () => {
@@ -483,7 +496,7 @@ describe("assigning tracked time", () => {
     await screen.findByText("Setup");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Zuordnen" }));
-    expect(await screen.findByText("Zugeordnet.")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Zugeordnet"))).toBe(true));
     expect(screen.queryByText("Setup")).toBeNull();
   });
 
@@ -494,7 +507,7 @@ describe("assigning tracked time", () => {
     await screen.findByText("Setup");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Zuordnen" }));
-    expect(await screen.findByText("Fehler (HTTP 500).")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("500"))).toBe(true));
     expect(screen.getByText("Setup")).toBeTruthy();
   });
 
@@ -551,7 +564,7 @@ describe("pushing leads to Lexware", () => {
   it("replaces the button with a chip once the lead is in Lexware", async () => {
     respond(/^\/lexware\/leads$/, { leads: [{ ...LEAD, lexware_contact_id: "lx-3" }] });
     await open("Kontakte");
-    expect(await screen.findByText("in Lexware")).toBeTruthy();
+expect(await screen.findByText("in Lexware")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Anlegen" })).toBeNull();
   });
 
@@ -565,7 +578,7 @@ describe("pushing leads to Lexware", () => {
     respond(/leads\/push$/, { error: "Duplikat" }, 409, "POST");
     const u = await open("Kontakte");
     await u.click(await screen.findByRole("button", { name: "Anlegen" }));
-    expect(await screen.findByText("Fehler: Duplikat")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("Duplikat"))).toBe(true));
   });
 
   it("does not list leads carried by a non-OK response", async () => {
@@ -603,7 +616,7 @@ describe("exporting an invoice", () => {
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
     await waitFor(() => expect(exported()).toHaveLength(1));
     expect((exported()[0]!.body as { finalize: boolean }).finalize).toBe(false);
-    expect(await screen.findByText(/Entwurf/)).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && /Entwurf/.test(t.message))).toBe(true));
   });
 
   it("exports a FINAL invoice only when the switch is checked", async () => {
@@ -613,7 +626,7 @@ describe("exporting an invoice", () => {
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
     await waitFor(() => expect(exported()).toHaveLength(1));
     expect((exported()[0]!.body as { finalize: boolean }).finalize).toBe(true);
-    expect(await screen.findByText(/final\)/)).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && /final\)/.test(t.message))).toBe(true));
   });
 
   it("sends the project and the billing period", async () => {
@@ -636,7 +649,7 @@ describe("exporting an invoice", () => {
     const u = await open("Rechnungen");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    expect(await screen.findByText("Rechnung erstellt (7,50 h, Entwurf).")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Rechnung erstellt (7,50 h, Entwurf)."))).toBe(true));
   });
 
   it("reports zero hours rather than nothing when the API omits the total", async () => {
@@ -644,7 +657,7 @@ describe("exporting an invoice", () => {
     const u = await open("Rechnungen");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    expect(await screen.findByText("Rechnung erstellt (0,00 h, Entwurf).")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Rechnung erstellt (0,00 h, Entwurf)."))).toBe(true));
   });
 
   it("surfaces the API's error message", async () => {
@@ -652,7 +665,7 @@ describe("exporting an invoice", () => {
     const u = await open("Rechnungen");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    expect(await screen.findByText("Fehler: Keine Zeiten im Zeitraum.")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("Keine Zeiten im Zeitraum"))).toBe(true));
   });
 
   it("falls back to the status code when the error carries no message", async () => {
@@ -660,7 +673,7 @@ describe("exporting an invoice", () => {
     const u = await open("Rechnungen");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    expect(await screen.findByText("Fehler: HTTP 500")).toBeTruthy();
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("HTTP 500"))).toBe(true));
   });
 
   it("does not refresh the export list after a failure", async () => {
@@ -668,7 +681,7 @@ describe("exporting an invoice", () => {
     const u = await open("Rechnungen");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    await screen.findByText(/Fehler/);
+await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && /./.test(t.message))).toBe(true));
     expect(sent("GET", /^\/lexware\/invoices$/)).toHaveLength(1);
   });
 
@@ -692,7 +705,7 @@ describe("exporting an invoice", () => {
     await screen.findByText("Bitte ein Projekt wählen.");
     await pickProject(u);
     await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
-    await screen.findByText(/Rechnung erstellt/);
+await waitFor(() => expect(toasts.some((t) => t.variant === "success" && /Rechnung erstellt/.test(t.message))).toBe(true));
     expect(screen.queryByText("Bitte ein Projekt wählen.")).toBeNull();
   });
 });
