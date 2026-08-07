@@ -244,7 +244,11 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
   }, [customerId]);
 
   return (
-    <div className="lx-picker flex gap-3">
+    // Two dropdowns whose min width is set by their widest option — customer
+    // and project names. They cannot be squeezed, so a non-wrapping row here
+    // overflowed on its own at phone width, and it sits INSIDE an already
+    // wrapping filter bar which wraps this picker as one indivisible unit.
+    <div className="lx-picker flex flex-wrap gap-3">
       <select className="field-boxed"
         value={customerId ?? ""}
         onChange={(e) => {
@@ -492,7 +496,12 @@ function InvoicesTab() {
         {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
 
       <h5>Bisherige Exporte</h5>
-      <table className="tds-table">
+      {/* `tabIndex` + `role="region"` + a name: this table is pure data, so it
+          holds nothing focusable, and a scroll container with no focusable
+          content cannot be scrolled by keyboard at all (WCAG 2.1.1). The
+          other tables here each have a button in the last column and get that
+          for free. `.tds-table` scrolls itself below 40rem. */}
+      <table className="tds-table" tabIndex={0} role="region" aria-label="Bisherige Exporte">
         <thead>
           <tr>
             <th>Datum</th>

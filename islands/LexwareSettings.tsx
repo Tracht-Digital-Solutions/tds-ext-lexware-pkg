@@ -107,7 +107,7 @@ export default function LexwareSettings() {
         <input className="field-boxed" type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.lexware.io/v1" />
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
           <span className="text-sm">Standard-Stundensatz (netto)</span>
           <input className="field-boxed" type="number" min="0" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="0" />
@@ -121,7 +121,7 @@ export default function LexwareSettings() {
       {/* The load failure stays in-flow (persistent state); the save outcome
           is a toast. Failures only, hence the danger hue. */}
       {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
-      <div className="flex items-center gap-3">
+      <div className="tds-toolbar">
         <button className="btn btn-primary" type="button" onClick={save} disabled={busy}>Speichern</button>
         <button type="button" className="btn btn-ghost" onClick={test}>Verbindung testen</button>
       </div>
