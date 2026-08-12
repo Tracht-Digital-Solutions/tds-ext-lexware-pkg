@@ -1,3 +1,11 @@
+
+/**
+ * Path + query of a request. The island calls an ABSOLUTE URL now (via
+ * `apiFetch`); a relative one would hit the product's own static host and come
+ * back as SPA-fallback HTML with a 200. Matching on the path keeps the route
+ * matchers below anchored.
+ */
+const pathOf = (url: string) => String(url).replace(/^https?:\/\/[^/]+/i, "");
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -78,7 +86,12 @@ describe("loading", () => {
     await open();
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    expect(fetchMock.mock.calls[0]![0]).toBe("/admin/settings/lexware");
+    expect(pathOf(fetchMock.mock.calls[0]![0] as string)).toBe("/admin/settings/lexware");
+    // Absolute, on the API host. Every other assertion here matches the PATH,
+    // which a relative fetch satisfies too — so this is the one that fails if
+    // the call ever goes back to the product's own origin (whose SPA fallback
+    // answers 200 + HTML and turns into a silent empty state).
+    expect(String(fetchMock.mock.calls[0]![0]).startsWith("https://api.tracht-digital.de/")).toBe(true);
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ credentials: "include" });
   });
 
@@ -212,7 +225,7 @@ describe("saving", () => {
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
     await waitFor(() => expect(put()).toBeDefined());
-    expect(put()!.url).toBe("/admin/settings/lexware");
+    expect(pathOf(put()!.url)).toBe("/admin/settings/lexware");
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     const call = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === "PUT")!;
     expect((call[1] as RequestInit).headers).toMatchObject({ "Content-Type": "application/json" });
@@ -288,7 +301,7 @@ describe("saving", () => {
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
     await waitFor(() => expect(toasts.some((t) => t.variant === "success" && t.message.includes("Gespeichert"))).toBe(true));
-    await waitFor(() => expect(calls.filter((c) => c.method === "GET" && c.url === "/admin/settings/lexware")).toHaveLength(2));
+    await waitFor(() => expect(calls.filter((c) => c.method === "GET" && pathOf(c.url) === "/admin/settings/lexware")).toHaveLength(2));
   });
 
   it("clears the typed key after a successful save", async () => {
@@ -315,7 +328,7 @@ describe("saving", () => {
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
     await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("403"))).toBe(true));
-    expect(calls.filter((c) => c.method === "GET" && c.url === "/admin/settings/lexware")).toHaveLength(1);
+    expect(calls.filter((c) => c.method === "GET" && pathOf(c.url) === "/admin/settings/lexware")).toHaveLength(1);
   });
 
   it("re-enables the save button afterwards", async () => {
@@ -332,7 +345,7 @@ describe("the connection test", () => {
   it("calls the module's own admin test route", async () => {
     const u = await open();
     await u.click(await screen.findByRole("button", { name: "Verbindung testen" }));
-    await waitFor(() => expect(calls.some((c) => c.url === "/lexware/admin/test")).toBe(true));
+    await waitFor(() => expect(calls.some((c) => pathOf(c.url) === "/lexware/admin/test")).toBe(true));
   });
 
   it("confirms a working connection", async () => {

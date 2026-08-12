@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Skeleton } from "@tracht-digital-solutions/tds-shared/components";
+import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
 
 interface Summary {
   configured: boolean;
@@ -17,7 +18,7 @@ export default function WidgetBody() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/lexware/summary", { credentials: "include" })
+    apiFetch("/lexware/summary")
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d: Summary) => setData(d))
       .catch(() => setError(true));

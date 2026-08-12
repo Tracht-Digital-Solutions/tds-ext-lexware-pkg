@@ -33,10 +33,18 @@ let calls: Array<{ url: string; method: string; body: unknown }> = [];
 let handlers: Handler[] = [];
 let gate: { match: RegExp; promise: Promise<void> } | null = null;
 
+/**
+ * Path + query of a request. The island calls an ABSOLUTE URL now (via
+ * `apiFetch`); a relative one would hit the product's own static host and come
+ * back as SPA-fallback HTML with a 200. Matching on the path keeps the route
+ * matchers below anchored.
+ */
+const pathOf = (url: string) => String(url).replace(/^https?:\/\/[^/]+/i, "");
+
 /** Register a reply, newest first (later `respond` calls win). */
 function respond(match: RegExp, body: unknown, status = 200, method?: string) {
   handlers.unshift((url, init) => {
-    if (!match.test(url)) return undefined;
+    if (!match.test(pathOf(url))) return undefined;
     if (method && (init?.method ?? "GET") !== method) return undefined;
     return { status, body };
   });
@@ -100,7 +108,7 @@ beforeEach(() => {
       const method = init?.method ?? "GET";
       calls.push({ url, method, body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined });
       const g = gate;
-      if (g && g.match.test(url)) await g.promise;
+      if (g && g.match.test(pathOf(url))) await g.promise;
       const reply = handlers.map((h) => h(url, init)).find((r) => r !== undefined)!;
       return {
         ok: reply.status < 300,
@@ -117,7 +125,7 @@ afterEach(() => {
 });
 
 const user = () => userEvent.setup({ delay: null });
-const sent = (method: string, match: RegExp) => calls.filter((c) => c.method === method && match.test(c.url));
+const sent = (method: string, match: RegExp) => calls.filter((c) => c.method === method && match.test(pathOf(c.url)));
 
 /** Render and settle the initial load of whichever tab is showing. */
 async function open(tab?: string) {
@@ -173,7 +181,12 @@ describe("the customer directory", () => {
   it("reads the customer list with credentials", async () => {
     await open();
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    expect(fetchMock.mock.calls[0]![0]).toBe("/lexware/customers");
+    expect(pathOf(fetchMock.mock.calls[0]![0] as string)).toBe("/lexware/customers");
+    // Absolute, on the API host. Every other assertion here matches the PATH,
+    // which a relative fetch satisfies too — so this is the one that fails if
+    // the call ever goes back to the product's own origin (whose SPA fallback
+    // answers 200 + HTML and turns into a silent empty state).
+    expect(String(fetchMock.mock.calls[0]![0]).startsWith("https://api.tracht-digital.de/")).toBe(true);
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ credentials: "include" });
   });
 
@@ -375,7 +388,7 @@ await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.messag
     await u.click(screen.getByRole("button", { name: "Projekt anlegen" }));
     await waitFor(() => expect(sent("POST", /projects$/)).toHaveLength(1));
     const call = sent("POST", /projects$/)[0]!;
-    expect(call.url).toBe("/lexware/customers/1/projects");
+    expect(pathOf(call.url)).toBe("/lexware/customers/1/projects");
     expect(call.body).toEqual({ title: "Wartung", hourly_rate: "80" });
   });
 
@@ -459,7 +472,7 @@ describe("assigning tracked time", () => {
     const u = await open("Zeit zuordnen");
     await u.click(screen.getByRole("button", { name: "Filtern" }));
     await waitFor(() => expect(sent("GET", /unassigned/)).toHaveLength(2));
-    expect(sent("GET", /unassigned/)[1]!.url).toBe("/lexware/time/unassigned?");
+    expect(pathOf(sent("GET", /unassigned/)[1]!.url)).toBe("/lexware/time/unassigned?");
   });
 
   it("passes both dates when they are set", async () => {
