@@ -19,6 +19,7 @@ use Tds\Ext\Lexware\Service\LexwareException;
 use Tds\Ext\Lexware\Service\LexwareInvoiceBuilder;
 use Tds\Ext\Lexware\Service\SourceGateway;
 use Tds\Frontend\Contract\AbstractModule;
+use Tds\Frontend\Contract\ApiDocSource;
 use Tds\Frontend\Contract\PermissionDef;
 use Tds\Frontend\Contract\SettingDef;
 use Tds\Frontend\Contract\SettingsStore;
@@ -36,7 +37,7 @@ use Tds\Frontend\Contract\UserContext;
  * URL, default rates) lives in the core {@see SettingsStore} under ns=`lexware`,
  * DB-first with an env fallback. Data via the core shared PDO.
  */
-final class LexwareModule extends AbstractModule
+final class LexwareModule extends AbstractModule implements ApiDocSource
 {
     private const NS = 'lexware';
 
@@ -506,5 +507,16 @@ final class LexwareModule extends AbstractModule
     {
         $res->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
         return $res->withStatus($status)->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Route documentation for the admin frontend's API reference. Kept in its
+     * own file so the prose does not sit in the middle of the wiring.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function apiDocs(): array
+    {
+        return require __DIR__ . '/../docs/api.php';
     }
 }
