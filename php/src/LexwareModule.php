@@ -75,7 +75,18 @@ final class LexwareModule extends AbstractModule implements ApiDocSource
     public function register(App $app): void
     {
         $c = $app->getContainer();
-        if ($c !== null && !$c->has(CustomerRepository::class)) {
+        // NEVER guard these with `!$c->has(X)`. PHP-DI answers `has()` from its
+        // definition sources, and autowiring is one of them: for any *concrete,
+        // instantiable* class the answer is always true, whether or not anyone
+        // ever bound it. So the guard skipped every binding below and the
+        // container silently autowired instead — invisible for the repositories
+        // and the two builders (their arguments are the bound PDO, or none),
+        // fatal for the LexwareClient, whose constructor takes strings PHP-DI
+        // cannot guess: every route resolving it answered 500 with `Parameter
+        // $apiKey of __construct() has no value defined or guessable`, and the
+        // settings-store factory never ran at all. The module owns these
+        // classes; nothing else defines them.
+        if ($c !== null) {
             $c->set(CustomerRepository::class, static fn ($c) => new CustomerRepository($c->get(PDO::class)));
             $c->set(TimeLinkRepository::class, static fn ($c) => new TimeLinkRepository($c->get(PDO::class)));
             $c->set(ContactMapRepository::class, static fn ($c) => new ContactMapRepository($c->get(PDO::class)));

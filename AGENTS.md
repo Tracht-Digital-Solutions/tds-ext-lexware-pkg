@@ -26,6 +26,26 @@ An **admin-only** extension (`lexware:read` / `lexware:write`) with four surface
 
 ## Architecture notes (don't regress)
 
+- **Never guard a container binding with `!$c->has(X::class)` — every route that
+  touches Lexware Office 500'd because of it.** PHP-DI answers `has()` out of its
+  definition sources, and *autowiring is one of them*: for any concrete,
+  instantiable class the answer is always `true`, bound or not. So the single
+  guard wrapping all eight bindings never ran, and the container quietly
+  autowired instead. For the repositories and the two builders that is invisible
+  (their arguments are the bound `PDO`, or none). For `LexwareClient` it is
+  fatal, because its constructor takes strings:
+
+  ```
+  Entry "…\Service\LexwareClient" cannot be resolved:
+  Parameter $apiKey of __construct() has no value defined or guessable
+  ```
+
+  The settings-store factory that reads `lexware.api_key` / `api_url` had never
+  run once, so the panel settings were dead as well. Nothing went red: this
+  repo's CI runs type-check + build, not tests, and a PHP-DI entry is built
+  lazily. The module owns these classes and nothing else defines them, so **bind
+  unconditionally**. Pinned by `ExtensionBindingsTest` in `tds-core-frontend-api`.
+
 - **Call the API with `apiFetch` from `@tracht-digital-solutions/tds-shared/api`,
   never a relative `fetch`.** Every island used to define its own
   `const api = (path, init) => fetch(path, { credentials: "include", ...init })`
