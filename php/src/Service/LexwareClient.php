@@ -44,6 +44,59 @@ final class LexwareClient
     }
 
     /**
+     * Read one invoice back.
+     *
+     * Needed because **the create response does not carry the invoice number.**
+     * `POST /v1/invoices` answers with `id`, `resourceUri` and the version and
+     * nothing else; `voucherNumber` — the thing a customer and the tax office
+     * both identify the document by — only exists once Lexware has assigned it,
+     * and is only readable here. A caller that stores the create response alone
+     * has the invoice's technical id and no way to name it.
+     *
+     * @return array<string,mixed> decoded invoice incl. `voucherNumber`, `voucherStatus`
+     * @throws LexwareException on a non-200 response or transport error
+     */
+    public function getInvoice(string $invoiceId): array
+    {
+        [$status, $body] = $this->request('GET', '/invoices/' . rawurlencode($invoiceId), null);
+        if ($status !== 200) {
+            throw new LexwareException(self::errorMessage($status, $body), $status);
+        }
+        return is_array($body) ? $body : [];
+    }
+
+    /**
+     * The file id of an invoice's rendered PDF, or `null` while there is none.
+     *
+     * Two calls are unavoidable: `/invoices/{id}/document` returns a
+     * `documentFileId`, and the bytes then live at `/files/{fileId}`. This
+     * returns the id rather than the bytes — a caller usually wants to store a
+     * reference, not to hold a PDF in memory.
+     *
+     * A **draft** invoice has no document. That is not an error and is not
+     * treated as one: Lexware answers 406, and the honest answer to "what is
+     * the PDF of an unfinalised invoice" is that there is not one yet.
+     *
+     * @throws LexwareException on any other error status or a transport error
+     */
+    public function invoiceDocumentFileId(string $invoiceId): ?string
+    {
+        [$status, $body] = $this->request(
+            'GET',
+            '/invoices/' . rawurlencode($invoiceId) . '/document',
+            null,
+        );
+        if ($status === 404 || $status === 406) {
+            return null;
+        }
+        if ($status !== 200) {
+            throw new LexwareException(self::errorMessage($status, $body), $status);
+        }
+        $id = $body['documentFileId'] ?? null;
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+
+    /**
      * Create a contact (customer role). Returns the decoded response incl. the
      * new contact `id` (used as `address.contactId` on later invoices).
      *
