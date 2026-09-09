@@ -34,8 +34,20 @@ const specifiers = [
   ...(manifest.settings ?? []).map((s) => s.island),
 ];
 
-/** The minor line the admin product caret-pins this package at (`^0.1.1`). */
-const PINNED_MINOR_LINE = "0.1";
+/**
+ * The minor line the admin product caret-pins this package at (`^0.2.0`).
+ *
+ * Moved from `0.1` when the client gained `getInvoice()` /
+ * `invoiceDocumentFileId()` and was released as 0.2.0. The two halves have to
+ * move TOGETHER — this constant and `tds-admin-frontend`'s range — because
+ * under 0.x a caret is minor-locked (`^0.1.1` means `>=0.1.1 <0.2.0`). Moving
+ * only this one leaves the product resolving a version that no longer exists
+ * on this line; moving only the product's range leaves this test red.
+ *
+ * Nothing goes red in the product when it is wrong. It simply keeps installing
+ * the old package and the new methods are silently absent.
+ */
+const PINNED_MINOR_LINE = "0.2";
 
 /** `@scope/name/pages/Index.astro` → `pages/Index.astro` */
 const subpath = (spec: string) => spec.slice(pkg.name.length + 1);
