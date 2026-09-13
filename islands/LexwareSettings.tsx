@@ -32,7 +32,14 @@ export default function LexwareSettings() {
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    const res = await api(NS);
+    // apiFetch hands back every HTTP status, but a request that never reaches
+    // the API rejects. Uncaught, this section stayed on its spinner for good.
+    const res = await api(NS).catch(() => null);
+    if (res === null) {
+      setStatus("Einstellungen konnten nicht geladen werden — die API ist nicht erreichbar.");
+      setLoaded(true);
+      return;
+    }
     if (!res.ok) {
       setStatus(res.status === 403 || res.status === 401 ? "Nur für Administratoren." : `Fehler (HTTP ${res.status}).`);
       setLoaded(true);
@@ -64,8 +71,12 @@ export default function LexwareSettings() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ settings }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (res === null) {
+      toast.danger("Speichern fehlgeschlagen — die API ist nicht erreichbar.");
+      return;
+    }
     if (res.ok) {
       setKeyInput("");
       toast.success("Gespeichert.");
@@ -77,7 +88,12 @@ export default function LexwareSettings() {
 
   const test = async () => {
     setTestResult("Teste …");
-    const res = await api("/lexware/admin/test");
+    const res = await api("/lexware/admin/test").catch(() => null);
+    if (res === null) {
+      // Not a verdict on Lexware: the request never got as far as our API.
+      setTestResult("Fehlgeschlagen: die API ist nicht erreichbar.");
+      return;
+    }
     const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
       setTestResult("Verbindung erfolgreich.");
