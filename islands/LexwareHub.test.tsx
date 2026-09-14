@@ -173,10 +173,10 @@ describe("the tab bar", () => {
 
   it("shows exactly one panel at a time", async () => {
     const u = await open();
-    expect(screen.getByRole("heading", { name: "Kunden", level: 4 })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Kunden", level: 2 })).toBeTruthy();
     await u.click(screen.getByRole("tab", { name: "Rechnungen" }));
     await screen.findByRole("button", { name: "Rechnung erstellen" });
-    expect(screen.queryByRole("heading", { name: "Kunden", level: 4 })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Kunden", level: 2 })).toBeNull();
   });
 
   it("marks only the open tab as selected", async () => {
@@ -313,7 +313,7 @@ describe("a selected customer", () => {
     respond(/^\/lexware\/customers\/1$/, { ...CUSTOMER, projects: [PROJECT], ...overrides });
     const u = await open();
     await u.click(await screen.findByRole("button", { name: /Acme GmbH/ }));
-    await screen.findByRole("heading", { name: "Acme GmbH", level: 4 });
+    await screen.findByRole("heading", { name: "Acme GmbH", level: 2 });
     return u;
   }
 

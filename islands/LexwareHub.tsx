@@ -161,7 +161,9 @@ function CustomersTab() {
   return (
     <div className="lexware-customers grid gap-4 md:grid-cols-2">
       <div>
-        <h4>Kunden</h4>
+        {/* h2/h3 below: the page's h1 is "Lexware", and these used to start at
+            h4 — a screen reader's heading list jumped from 1 to 4. */}
+        <h2>Kunden</h2>
         <ul className="tds-list">
           {customers.map((c) => (
             <li key={c.id}>
@@ -176,10 +178,22 @@ function CustomersTab() {
         </ul>
 
         <div className="tds-card tds-stack">
-          <h5>Neuer Kunde</h5>
-          <input className="field-boxed" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="field-boxed" type="email" placeholder="E-Mail (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
+          <h3>Neuer Kunde</h3>
+          {/* Visible labels, not placeholders alone: a placeholder is gone on
+              the first keystroke, and three filled boxes stacked gave no clue
+              which one held the rate. */}
+          <label className="tds-field-row">
+            <span>Name</span>
+            <input className="field-boxed" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="tds-field-row">
+            <span>E-Mail</span>
+            <input className="field-boxed" type="email" placeholder="E-Mail (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label className="tds-field-row">
+            <span>Stundensatz netto (€/h)</span>
+            <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz netto (optional)" value={rate} onChange={(e) => setRate(e.target.value)} />
+          </label>
           <button className="btn btn-primary" type="button" onClick={addCustomer}>Anlegen</button>
         </div>
         {/* Validation only now — outcomes go to the toast stack. */}
@@ -217,7 +231,7 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
 
   return (
     <div className="lx-detail">
-      <h4>{customer.name}</h4>
+      <h2>{customer.name}</h2>
       <p className="opacity-80">
         {customer.email ?? "keine E-Mail"} ·{" "}
         {customer.lexware_contact_id ? `Lexware-Kontakt ${customer.lexware_contact_id}` : "nicht in Lexware"}
@@ -226,7 +240,7 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
         {customer.lexware_contact_id ? "In Lexware angelegt" : "Als Lexware-Kontakt anlegen"}
       </button>
 
-      <h5>Projekte</h5>
+      <h3>Projekte</h3>
       <ul className="tds-list">
         {(customer.projects ?? []).map((p) => (
           <li key={p.id}>
@@ -238,8 +252,14 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
         {(customer.projects ?? []).length === 0 ? <li className="opacity-70">Noch keine Projekte.</li> : null}
       </ul>
       <div className="tds-card tds-stack">
-        <input className="field-boxed" type="text" placeholder="Projekttitel" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz (optional, überschreibt Kunde)" value={rate} onChange={(e) => setRate(e.target.value)} />
+        <label className="tds-field-row">
+          <span>Projekttitel</span>
+          <input className="field-boxed" type="text" placeholder="Projekttitel" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label className="tds-field-row">
+          <span>Stundensatz (€/h)</span>
+          <input className="field-boxed" type="number" min="0" step="0.01" placeholder="Stundensatz (optional, überschreibt Kunde)" value={rate} onChange={(e) => setRate(e.target.value)} />
+        </label>
         <button className="btn btn-primary" type="button" onClick={addProject}>Projekt anlegen</button>
       </div>
     </div>
@@ -559,7 +579,7 @@ function InvoicesTab() {
       {/* Validation only now — outcomes go to the toast stack. */}
         {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
 
-      <h5>Bisherige Exporte</h5>
+      <h2>Bisherige Exporte</h2>
       {/* `tabIndex` + `role="region"` + a name: this table is pure data, so it
           holds nothing focusable, and a scroll container with no focusable
           content cannot be scrolled by keyboard at all (WCAG 2.1.1). The
