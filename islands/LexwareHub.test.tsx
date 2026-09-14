@@ -26,6 +26,7 @@ import { TOAST_EVENT } from "@tracht-digital-solutions/tds-shared/toast";
 interface Reply {
   status: number;
   body: unknown;
+  unreachable?: boolean;
 }
 type Handler = (url: string, init?: RequestInit) => Reply | undefined;
 
@@ -47,6 +48,15 @@ function respond(match: RegExp, body: unknown, status = 200, method?: string) {
     if (!match.test(pathOf(url))) return undefined;
     if (method && (init?.method ?? "GET") !== method) return undefined;
     return { status, body };
+  });
+}
+
+/** A request that never reaches the API: fetch itself rejects, as it does offline. */
+function unreachable(match: RegExp, method?: string) {
+  handlers.unshift((url, init) => {
+    if (!match.test(pathOf(url))) return undefined;
+    if (method && (init?.method ?? "GET") !== method) return undefined;
+    return { status: 0, body: null, unreachable: true };
   });
 }
 
@@ -110,6 +120,7 @@ beforeEach(() => {
       const g = gate;
       if (g && g.match.test(pathOf(url))) await g.promise;
       const reply = handlers.map((h) => h(url, init)).find((r) => r !== undefined)!;
+      if (reply.unreachable) throw new TypeError("Failed to fetch");
       return {
         ok: reply.status < 300,
         status: reply.status,
@@ -775,5 +786,117 @@ describe("the past exports", () => {
     respond(/^\/lexware\/invoices$/, { invoices: [INVOICE] }, 403);
     await open("Rechnungen");
     expect(await screen.findByText("Noch keine Rechnungen exportiert.")).toBeTruthy();
+  });
+});
+
+describe("when the API is unreachable", () => {
+  // fetch rejects offline. Unhandled, every list in the hub read as empty and
+  // every action ended without a word.
+  const failed = (text: string) => toasts.some((t) => t.variant === "danger" && t.message.includes(text));
+
+  it("says so instead of an empty customer list", async () => {
+    unreachable(/^\/lexware\/customers$/, "GET");
+    await open();
+    expect(await screen.findByText("Kunden konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+  });
+
+  it("keeps a new customer's details when the create never arrives", async () => {
+    unreachable(/^\/lexware\/customers$/, "POST");
+    const u = await open();
+    await u.type(screen.getByPlaceholderText("Name"), "Neu GmbH");
+    await u.click(screen.getByRole("button", { name: "Anlegen" }));
+    await waitFor(() => expect(failed("nicht erreichbar")).toBe(true));
+    expect((screen.getByPlaceholderText("Name") as HTMLInputElement).value).toBe("Neu GmbH");
+  });
+
+  it("says so when a customer's detail never arrives", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    unreachable(/^\/lexware\/customers\/1$/, "GET");
+    const u = await open();
+    await u.click(await screen.findByRole("button", { name: /Acme GmbH/ }));
+    await waitFor(() => expect(failed("Kunde konnte nicht geladen werden")).toBe(true));
+  });
+
+  it("says so when the contact hand-off never arrives", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    respond(/^\/lexware\/customers\/1$/, { ...CUSTOMER, projects: [] });
+    unreachable(/push-contact$/, "POST");
+    const u = await open();
+    await u.click(await screen.findByRole("button", { name: /Acme GmbH/ }));
+    await u.click(await screen.findByRole("button", { name: "Als Lexware-Kontakt anlegen" }));
+    await waitFor(() => expect(failed("Hand-off an Lexware fehlgeschlagen")).toBe(true));
+  });
+
+  it("keeps the project title when a new project never arrives", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    respond(/^\/lexware\/customers\/1$/, { ...CUSTOMER, projects: [] });
+    unreachable(/customers\/1\/projects$/, "POST");
+    const u = await open();
+    await u.click(await screen.findByRole("button", { name: /Acme GmbH/ }));
+    await u.type(await screen.findByPlaceholderText("Projekttitel"), "Relaunch");
+    await u.click(screen.getByRole("button", { name: "Projekt anlegen" }));
+    await waitFor(() => expect(failed("Projekt konnte nicht angelegt werden")).toBe(true));
+    expect((screen.getByPlaceholderText("Projekttitel") as HTMLInputElement).value).toBe("Relaunch");
+  });
+
+  it("says so instead of an empty time list, and the picker does not reject", async () => {
+    unreachable(/^\/lexware\/time\/unassigned/, "GET");
+    unreachable(/^\/lexware\/customers$/, "GET");
+    await open("Zeit zuordnen");
+    expect(await screen.findByText("Zeiteinträge konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+  });
+
+  it("says so when the picker's projects never arrive", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    unreachable(/^\/lexware\/customers\/1$/, "GET");
+    const u = await open("Zeit zuordnen");
+    await screen.findByRole("option", { name: "Acme GmbH" });
+    const [customerSelect] = screen.getAllByRole("combobox");
+    await u.selectOptions(customerSelect!, "1");
+    await waitFor(() => expect(failed("Projekte konnten nicht geladen werden")).toBe(true));
+  });
+
+  it("keeps the row when the assignment never arrives", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    respond(/^\/lexware\/customers\/1$/, { ...CUSTOMER, projects: [PROJECT] });
+    respond(/^\/lexware\/time\/unassigned/, { entries: [ENTRY] });
+    unreachable(/assign$/, "POST");
+    const u = await open("Zeit zuordnen");
+    await screen.findByText("Setup");
+    await pickProject(u);
+    await u.click(screen.getByRole("button", { name: "Zuordnen" }));
+    await waitFor(() => expect(failed("Zuordnung fehlgeschlagen")).toBe(true));
+    expect(screen.getByText("Setup")).toBeTruthy();
+  });
+
+  it("says so instead of an empty lead list", async () => {
+    unreachable(/^\/lexware\/leads$/, "GET");
+    await open("Kontakte");
+    expect(await screen.findByText("Kontakt-Kandidaten konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+  });
+
+  it("says so when a lead hand-off never arrives", async () => {
+    respond(/^\/lexware\/leads$/, { leads: [LEAD] });
+    unreachable(/leads\/push$/, "POST");
+    const u = await open("Kontakte");
+    await u.click(await screen.findByRole("button", { name: "Anlegen" }));
+    await waitFor(() => expect(failed("Hand-off an Lexware fehlgeschlagen")).toBe(true));
+  });
+
+  it("says so instead of an empty export list", async () => {
+    unreachable(/^\/lexware\/invoices$/, "GET");
+    await open("Rechnungen");
+    expect(await screen.findByText("Rechnungen konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+  });
+
+  it("frees the export button when the export never arrives", async () => {
+    respond(/^\/lexware\/customers$/, { customers: [CUSTOMER] });
+    respond(/^\/lexware\/customers\/1$/, { ...CUSTOMER, projects: [PROJECT] });
+    unreachable(/from-project$/, "POST");
+    const u = await open("Rechnungen");
+    await pickProject(u);
+    await u.click(screen.getByRole("button", { name: "Rechnung erstellen" }));
+    await waitFor(() => expect(failed("Rechnung fehlgeschlagen")).toBe(true));
+    expect((screen.getByRole("button", { name: "Rechnung erstellen" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

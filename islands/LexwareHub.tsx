@@ -97,7 +97,14 @@ function CustomersTab() {
   const [status, setStatus] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await api("/lexware/customers");
+    // apiFetch rejects when the request never reaches the API; uncaught, the
+    // list read "Noch keine Kunden." and the rejection went unhandled.
+    const res = await api("/lexware/customers").catch(() => null);
+    if (res === null) {
+      setStatus("Kunden konnten nicht geladen werden — die API ist nicht erreichbar.");
+      return;
+    }
+    setStatus(null);
     if (res.ok) setCustomers((await res.json()).customers ?? []);
   };
   useEffect(() => {
@@ -105,7 +112,11 @@ function CustomersTab() {
   }, []);
 
   const open = async (id: number) => {
-    const res = await api(`/lexware/customers/${id}`);
+    const res = await api(`/lexware/customers/${id}`).catch(() => null);
+    if (res === null) {
+      toast.danger("Kunde konnte nicht geladen werden — die API ist nicht erreichbar.");
+      return;
+    }
     if (res.ok) setSelected(await res.json());
   };
 
@@ -115,7 +126,12 @@ function CustomersTab() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, default_hourly_rate: rate }),
-    });
+    }).catch(() => null);
+    if (res === null) {
+      // The form keeps what was typed.
+      toast.danger("Kunde konnte nicht angelegt werden — die API ist nicht erreichbar.");
+      return;
+    }
     if (res.ok) {
       setName("");
       setEmail("");
@@ -128,7 +144,11 @@ function CustomersTab() {
   };
 
   const pushContact = async (id: number) => {
-    const res = await api(`/lexware/customers/${id}/push-contact`, { method: "POST" });
+    const res = await api(`/lexware/customers/${id}/push-contact`, { method: "POST" }).catch(() => null);
+    if (res === null) {
+      toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
+      return;
+    }
     const d = await res.json().catch(() => ({}));
     // Was one info-hued banner for progress, success AND failure — so a
     // rejected hand-off to Lexware read exactly like a successful one.
@@ -183,7 +203,11 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, hourly_rate: rate }),
-    });
+    }).catch(() => null);
+    if (res === null) {
+      toast.danger("Projekt konnte nicht angelegt werden — die API ist nicht erreichbar.");
+      return;
+    }
     if (res.ok) {
       setTitle("");
       setRate("");
@@ -229,9 +253,13 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    void api("/lexware/customers").then(async (r) => {
-      if (r.ok) setCustomers((await r.json()).customers ?? []);
-    });
+    // A lost request leaves the picker empty instead of an unhandled rejection;
+    // the tab's own list says the API is unreachable.
+    void api("/lexware/customers")
+      .then(async (r) => {
+        if (r.ok) setCustomers((await r.json()).customers ?? []);
+      })
+      .catch(() => setCustomers([]));
   }, []);
 
   useEffect(() => {
@@ -239,9 +267,14 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
       setProjects([]);
       return;
     }
-    void api(`/lexware/customers/${customerId}`).then(async (r) => {
-      if (r.ok) setProjects((await r.json()).projects ?? []);
-    });
+    void api(`/lexware/customers/${customerId}`)
+      .then(async (r) => {
+        if (r.ok) setProjects((await r.json()).projects ?? []);
+      })
+      .catch(() => {
+        setProjects([]);
+        toast.danger("Projekte konnten nicht geladen werden — die API ist nicht erreichbar.");
+      });
   }, [customerId]);
 
   return (
@@ -289,7 +322,14 @@ function TimeTab() {
     const q = new URLSearchParams();
     if (from) q.set("from", from);
     if (to) q.set("to", to);
-    const res = await api(`/lexware/time/unassigned?${q.toString()}`);
+    const res = await api(`/lexware/time/unassigned?${q.toString()}`).catch(() => null);
+    if (res === null) {
+      // Uncaught, the table read "Keine offenen Einträge." and the rejection
+      // went unhandled.
+      setStatus("Zeiteinträge konnten nicht geladen werden — die API ist nicht erreichbar.");
+      return;
+    }
+    setStatus(null);
     if (res.ok) setEntries((await res.json()).entries ?? []);
   };
   useEffect(() => {
@@ -305,7 +345,11 @@ function TimeTab() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ timeEntryId: entryId, projectId }),
-    });
+    }).catch(() => null);
+    if (res === null) {
+      toast.danger("Zuordnung fehlgeschlagen — die API ist nicht erreichbar.");
+      return;
+    }
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
       toast.success("Zugeordnet.");
@@ -368,7 +412,12 @@ function ContactsTab() {
   const [status, setStatus] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await api("/lexware/leads");
+    const res = await api("/lexware/leads").catch(() => null);
+    if (res === null) {
+      setStatus("Kontakt-Kandidaten konnten nicht geladen werden — die API ist nicht erreichbar.");
+      return;
+    }
+    setStatus(null);
     if (res.ok) setLeads((await res.json()).leads ?? []);
   };
   useEffect(() => {
@@ -386,7 +435,11 @@ function ContactsTab() {
         email: lead.email,
         company: lead.company,
       }),
-    });
+    }).catch(() => null);
+    if (res === null) {
+      toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
+      return;
+    }
     const d = await res.json().catch(() => ({}));
     if (res.ok) toast.success("Kontakt angelegt.");
     else toast.danger(`Hand-off an Lexware fehlgeschlagen: ${d.error ?? `HTTP ${res.status}`}`);
@@ -446,7 +499,12 @@ function InvoicesTab() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const load = async () => {
-    const res = await api("/lexware/invoices");
+    const res = await api("/lexware/invoices").catch(() => null);
+    if (res === null) {
+      setStatus("Rechnungen konnten nicht geladen werden — die API ist nicht erreichbar.");
+      return;
+    }
+    setStatus(null);
     if (res.ok) setInvoices((await res.json()).invoices ?? []);
   };
   useEffect(() => {
@@ -464,7 +522,12 @@ function InvoicesTab() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, from, to, finalize }),
-    });
+    }).catch(() => null);
+    if (res === null) {
+      setBusy(false);
+      toast.danger("Rechnung fehlgeschlagen — die API ist nicht erreichbar.");
+      return;
+    }
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (res.ok) {
