@@ -10,7 +10,9 @@ import LexwareSettings from "./LexwareSettings.tsx";
 // the reason the user navigated.
 ---
 
+{/* No heading of its own: the Einstellungen host renders this section's
+    `label` ("Lexware") as the h2 directly above, and an h3 "Lexware Office"
+    here only repeated it. */}
 <div class="tds-settings-section__body">
-  <h3>Lexware Office</h3>
   <LexwareSettings client:visible />
 </div>
