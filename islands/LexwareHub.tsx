@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { toast } from "@tracht-digital-solutions/tds-shared/components";
 import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
+import {
+  AnimatedItem,
+  AnimatedList,
+  Presence,
+  TabIndicator,
+} from "@tracht-digital-solutions/tds-shared/motion/react";
 
 const api = apiFetch;
 
@@ -70,19 +76,20 @@ export default function LexwareHub() {
             type="button"
             role="tab"
             aria-selected={tab === id}
-            className={tab === id ? "chip chip-active" : "chip"}
+            className={tab === id ? "chip tds-tab chip-active" : "chip tds-tab"}
             onClick={() => setTab(id)}
           >
             {label}
+            {tab === id ? <TabIndicator group="lexware" /> : null}
           </button>
         ))}
       </nav>
-      <div className="lexware-tabpanel">
+      <Presence view={tab} className="lexware-tabpanel">
         {tab === "customers" ? <CustomersTab /> : null}
         {tab === "time" ? <TimeTab /> : null}
         {tab === "contacts" ? <ContactsTab /> : null}
         {tab === "invoices" ? <InvoicesTab /> : null}
-      </div>
+      </Presence>
     </div>
   );
 }
@@ -164,18 +171,24 @@ function CustomersTab() {
         {/* h2/h3 below: the page's h1 is "Lexware", and these used to start at
             h4 — a screen reader's heading list jumped from 1 to 4. */}
         <h2>Kunden</h2>
-        <ul className="tds-list">
+        <AnimatedList className="tds-list">
           {customers.map((c) => (
-            <li key={c.id}>
+            <AnimatedItem key={c.id}>
               <button type="button" className="btn btn-ghost tds-list__row" onClick={() => void open(c.id)}>
                 <strong>{c.name}</strong>
                 <span className="opacity-70"> · {c.project_count ?? 0} Projekte</span>
                 {c.lexware_contact_id ? <span className="chip chip--success"> Lexware</span> : null}
               </button>
-            </li>
+            </AnimatedItem>
           ))}
-          {customers.length === 0 ? <li className="opacity-70">Noch keine Kunden.</li> : null}
-        </ul>
+          {customers.length === 0 ? (
+            // Keyed like every other row: AnimatePresence tracks its children
+            // by key, and an unkeyed one cannot be told apart from a moved row.
+            <AnimatedItem key="empty" className="opacity-70">
+              Noch keine Kunden.
+            </AnimatedItem>
+          ) : null}
+        </AnimatedList>
 
         <div className="tds-card tds-stack">
           <h3>Neuer Kunde</h3>
@@ -201,7 +214,9 @@ function CustomersTab() {
       </div>
 
       <div>
-        {selected ? <CustomerDetail customer={selected} onChanged={() => void open(selected.id)} onPush={() => void pushContact(selected.id)} /> : <p className="opacity-70">Kunde wählen …</p>}
+        <Presence view={selected ? `customer-${selected.id}` : "none"}>
+          {selected ? <CustomerDetail customer={selected} onChanged={() => void open(selected.id)} onPush={() => void pushContact(selected.id)} /> : <p className="opacity-70">Kunde wählen …</p>}
+        </Presence>
       </div>
     </div>
   );

@@ -144,6 +144,10 @@ async function open(tab?: string) {
   const u = user();
   if (tab) {
     await u.click(screen.getByRole("tab", { name: tab }));
+    // The panels cross-fade (tds-shared Presence): the outgoing one stays in
+    // the DOM until its exit finishes, marked aria-hidden AND inert. Both
+    // together, because the tab indicator is aria-hidden at rest.
+    await waitFor(() => expect(document.querySelector('[aria-hidden="true"][inert]')).toBeNull());
   }
   await waitFor(() => expect(calls.length).toBeGreaterThan(0));
   return u;
