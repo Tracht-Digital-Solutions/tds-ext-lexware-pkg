@@ -95,6 +95,14 @@ An **admin-only** extension (`lexware:read` / `lexware:write`) with four surface
   remaining banners carry validation only, in `.tds-alert--danger`. Never mount
   a `ToastHost` here — the frontend host owns the only one.
 
+## Motion (tds-shared >= 0.38.7)
+
+Die vier Tabs tragen einen `TabIndicator` und wechseln per `Presence`, die
+Kundenliste ist eine `AnimatedList`, der Detailbereich blendet je Kunde über.
+Ein ausblendender Tab-Bereich bleibt kurz im DOM und traegt dabei
+`aria-hidden` UND `inert` — Tests warten auf beides zusammen, nicht auf
+`aria-hidden` allein: der Tab-Indikator traegt das im Ruhezustand.
+
 ## Conventions baked in (from the template)
 
 - Depends on the **published** `tds-frontend-contract` `^1.0.0` — Composer via the
