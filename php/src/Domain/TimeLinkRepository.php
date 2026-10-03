@@ -34,10 +34,11 @@ final class TimeLinkRepository
     }
 
     /**
-     * Completed, project-linked time entries in an optional date window, with a
-     * computed `duration_minutes` (the time_entry table stores no duration).
-     * Empty when the time-tracker table is absent — the JOIN simply matches
-     * nothing since no link rows can exist without it.
+     * Completed, project-linked, NOT YET INVOICED time entries in an optional
+     * date window, with a computed `duration_minutes` (the time_entry table
+     * stores no duration). Empty when the time-tracker table is absent: the
+     * INNER JOIN would otherwise throw "table doesn't exist" (1146) — the old
+     * comment claimed it simply matched nothing.
      *
      * @return list<array<string,mixed>>
      */
@@ -47,7 +48,7 @@ final class TimeLinkRepository
                        TIMESTAMPDIFF(MINUTE, te.started_at, te.ended_at) AS duration_minutes
                 FROM lx_time_link l
                 INNER JOIN time_entry te ON te.id = l.time_entry_id
-                WHERE l.project_id = :pid AND te.ended_at IS NOT NULL';
+                WHERE l.project_id = :pid AND te.ended_at IS NOT NULL AND l.invoiced_ref IS NULL';
         $params = [':pid' => $projectId];
         if ($from !== null && $from !== '') {
             $sql .= ' AND te.started_at >= :from';
@@ -58,12 +59,58 @@ final class TimeLinkRepository
             $params[':to'] = $to . ' 23:59:59';
         }
         $sql .= ' ORDER BY te.started_at ASC';
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        try {
+            // prepare() inside too: with native prepares the server rejects
+            // the missing table there, not at execute().
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+        } catch (\PDOException $e) {
+            if ($e->getCode() === '42S02') {
+                return []; // tds-ext-time-tracker not installed
+            }
+            throw $e;
+        }
         return array_map(static fn (array $r): array => [
             'id' => (int) $r['id'],
             'note' => $r['note'] !== null ? (string) $r['note'] : null,
             'duration_minutes' => (int) $r['duration_minutes'],
         ], $stmt->fetchAll());
+    }
+
+    /**
+     * Reserve entries for one export. True only when EVERY id was still
+     * billable — two exports of one period no longer bill the same hours.
+     *
+     * @param list<int> $timeEntryIds
+     */
+    public function reserve(array $timeEntryIds, string $reservation): bool
+    {
+        if ($timeEntryIds === []) {
+            return false;
+        }
+        $in = implode(',', array_map('intval', $timeEntryIds));
+        $stmt = $this->pdo->prepare(
+            "UPDATE lx_time_link SET invoiced_ref = :r WHERE invoiced_ref IS NULL AND time_entry_id IN ({$in})"
+        );
+        $stmt->execute([':r' => $reservation]);
+        if ($stmt->rowCount() === count($timeEntryIds)) {
+            return true;
+        }
+        $this->release($reservation);
+        return false;
+    }
+
+    /** Give a failed export's entries back. */
+    public function release(string $reservation): void
+    {
+        $this->pdo->prepare('UPDATE lx_time_link SET invoiced_ref = NULL WHERE invoiced_ref = :r')
+            ->execute([':r' => $reservation]);
+    }
+
+    /** Turn a reservation into the Lexware invoice it became. */
+    public function markInvoiced(string $reservation, string $lexwareInvoiceId): void
+    {
+        $this->pdo->prepare('UPDATE lx_time_link SET invoiced_ref = :id, invoiced_at = NOW() WHERE invoiced_ref = :r')
+            ->execute([':id' => $lexwareInvoiceId, ':r' => $reservation]);
     }
 }

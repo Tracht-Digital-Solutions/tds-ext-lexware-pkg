@@ -366,9 +366,16 @@ final class LexwareModule extends AbstractModule implements ApiDocSource
                 ?? $project['tax_rate_percent']
                 ?? (float) self::globalDefault($c, 'default_tax_rate', 'LEXWARE_TAX_RATE_PERCENT', '19');
 
-            $entries = $c->get(TimeLinkRepository::class)->billableForProject($projectId, $from, $to);
+            $links = $c->get(TimeLinkRepository::class);
+            $entries = $links->billableForProject($projectId, $from, $to);
             if ($entries === []) {
                 return self::json($res, ['error' => 'Keine abrechenbaren Zeiteinträge im Zeitraum.'], 422);
+            }
+            // Reserve the entries before talking to Lexware: an export that
+            // runs twice (double click, second tab) bills the same hours once.
+            $reservation = 'pending-' . bin2hex(random_bytes(8));
+            if (!$links->reserve(array_map(static fn (array $e): int => (int) $e['id'], $entries), $reservation)) {
+                return self::json($res, ['error' => 'Diese Zeiteinträge werden gerade abgerechnet oder sind schon abgerechnet.'], 409);
             }
 
             $built = $c->get(LexwareInvoiceBuilder::class)->build(
@@ -383,8 +390,10 @@ final class LexwareModule extends AbstractModule implements ApiDocSource
             try {
                 $result = $client->createInvoice($built['payload'], $finalize);
             } catch (LexwareException $e) {
+                $links->release($reservation);
                 return self::json($res, ['error' => $e->getMessage()], 502);
             }
+            $links->markInvoiced($reservation, (string) $result['id']);
 
             $c->get(InvoiceLogRepository::class)->log([
                 'lexware_invoice_id' => (string) $result['id'],
