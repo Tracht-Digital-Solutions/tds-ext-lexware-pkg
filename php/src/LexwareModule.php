@@ -19,6 +19,7 @@ use Tds\Ext\Lexware\Service\LexwareException;
 use Tds\Ext\Lexware\Service\LexwareInvoiceBuilder;
 use Tds\Ext\Lexware\Service\SourceGateway;
 use Tds\Frontend\Contract\AbstractModule;
+use Tds\Frontend\Contract\SetupStatusSource;
 use Tds\Frontend\Contract\ApiDocSource;
 use Tds\Frontend\Contract\PermissionDef;
 use Tds\Frontend\Contract\SettingDef;
@@ -38,8 +39,11 @@ use Tds\Frontend\Contract\ModuleHttp;
  * URL, default rates) lives in the core {@see SettingsStore} under ns=`lexware`,
  * DB-first with an env fallback. Data via the core shared PDO.
  */
-final class LexwareModule extends AbstractModule implements ApiDocSource
+final class LexwareModule extends AbstractModule implements ApiDocSource, SetupStatusSource
 {
+    /** Kept from register() for setupItems(), which the base calls without one. */
+    private ?\Psr\Container\ContainerInterface $setupContainer = null;
+
     use ModuleHttp;
 
     private const NS = 'lexware';
@@ -75,9 +79,38 @@ final class LexwareModule extends AbstractModule implements ApiDocSource
         ];
     }
 
+    /**
+     * What the panel's setup wizard should say about this module. Uses the
+     * same check the feature itself runs, never a secret.
+     *
+     * @return list<array<string,string>>
+     */
+    public function setupItems(\Tds\Frontend\Contract\UserContext $user): array
+    {
+        $c = $this->setupContainer;
+        if ($c === null) {
+            return [];
+        }
+        $items = [];
+        try {
+            $items[] = [
+                'id' => 'lexware:api',
+                'module' => 'lexware',
+                'title' => 'Rechnungen über Lexware Office',
+                'description' => 'Ohne API-Schlüssel schreibt das System keine Rechnungen, auch nicht für bezahlte Shop-Bestellungen.',
+                'state' => $c->get(LexwareClient::class)->isConfigured() ? 'ok' : 'missing',
+                'level' => 'recommended',
+                'href' => '/einstellungen#settings-lexware',
+            ];
+        } catch (\Throwable) {
+        }
+        return $items;
+    }
+
     public function register(App $app): void
     {
         $c = $app->getContainer();
+        $this->setupContainer = $c;
         // NEVER guard these with `!$c->has(X)`. PHP-DI answers `has()` from its
         // definition sources, and autowiring is one of them: for any *concrete,
         // instantiable* class the answer is always true, whether or not anyone
