@@ -201,14 +201,14 @@ describe("loading", () => {
   it("reports any other failure with its status", async () => {
     getReply = { status: 500, body: {} };
     render(<LexwareSettings />);
-    expect(await screen.findByText("Fehler (HTTP 500).")).toBeTruthy();
+    expect(await screen.findByText("Einstellungen konnten nicht geladen werden (HTTP 500).")).toBeTruthy();
   });
 
   it("leaves the loading state even when the request fails", async () => {
     // Otherwise the settings section is a permanent "Wird geladen …".
     getReply = { status: 500, body: {} };
     render(<LexwareSettings />);
-    await screen.findByText("Fehler (HTTP 500).");
+    await screen.findByText("Einstellungen konnten nicht geladen werden (HTTP 500).");
     expect(screen.queryByLabelText("Wird geladen")).toBeNull();
   });
 
@@ -335,7 +335,7 @@ describe("saving", () => {
     const u = await open();
     await screen.findByPlaceholderText("https://api.lexware.io/v1");
     await u.click(screen.getByRole("button", { name: "Speichern" }));
-    await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message.includes("403"))).toBe(true));
+    await waitFor(() => expect(toasts.some((t) => t.variant === "danger" && t.message === "Nur für Administratoren.")).toBe(true));
     expect(calls.filter((c) => c.method === "GET" && pathOf(c.url) === "/admin/settings/lexware")).toHaveLength(1);
   });
 

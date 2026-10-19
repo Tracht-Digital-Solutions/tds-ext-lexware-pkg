@@ -1,94 +1,45 @@
 import { useEffect, useState } from "react";
-import { Spinner, toast } from "@tracht-digital-solutions/tds-shared/components";
+import { Alert, Spinner } from "@tracht-digital-solutions/tds-shared/components";
 import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
+import { SecretField, useRuntimeSettings } from "@tracht-digital-solutions/tds-shared/admin";
 
-interface Masked {
-  key: string;
-  secret: boolean;
-  configured?: boolean;
-  last4?: string | null;
-  value?: string;
-}
-
-const api = apiFetch;
-const NS = "/admin/settings/lexware";
+const DEFAULT_URL = "https://api.lexware.io/v1";
 
 /**
  * Lexware settings — API key + URL + default net hourly rate + tax rate,
  * persisted in the core runtime settings store (`/admin/settings/lexware`,
- * admin-only). The secret key comes back masked (configured + last4); a blank
- * key on save keeps the existing value. The backend reads these DB-first with an
- * env fallback. A connection test hits GET /lexware/admin/test.
+ * admin-only) through tds-shared `useRuntimeSettings`. The secret key comes
+ * back masked (configured + last4); a blank key on save keeps the existing
+ * value. The backend reads these DB-first with an env fallback. A connection
+ * test hits GET /lexware/admin/test.
  */
 export default function LexwareSettings() {
-  const [loaded, setLoaded] = useState(false);
-  const [keyState, setKeyState] = useState<Masked | null>(null);
+  const settings = useRuntimeSettings("lexware");
   const [keyInput, setKeyInput] = useState("");
-  const [url, setUrl] = useState("https://api.lexware.io/v1");
+  const [url, setUrl] = useState(DEFAULT_URL);
   const [rate, setRate] = useState("");
   const [tax, setTax] = useState("19");
-  const [status, setStatus] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const load = async () => {
-    // apiFetch hands back every HTTP status, but a request that never reaches
-    // the API rejects. Uncaught, this section stayed on its spinner for good.
-    const res = await api(NS).catch(() => null);
-    if (res === null) {
-      setStatus("Einstellungen konnten nicht geladen werden — die API ist nicht erreichbar.");
-      setLoaded(true);
-      return;
-    }
-    if (!res.ok) {
-      setStatus(res.status === 403 || res.status === 401 ? "Nur für Administratoren." : `Fehler (HTTP ${res.status}).`);
-      setLoaded(true);
-      return;
-    }
-    const d = await res.json();
-    const map = new Map<string, Masked>((d.settings ?? []).map((s: Masked) => [s.key, s]));
-    setKeyState(map.get("api_key") ?? null);
-    setUrl(map.get("api_url")?.value || "https://api.lexware.io/v1");
-    setRate(map.get("default_hourly_rate")?.value ?? "");
-    setTax(map.get("default_tax_rate")?.value || "19");
-    setLoaded(true);
-  };
 
   useEffect(() => {
-    void load();
-  }, []);
+    setUrl(settings.value("api_url", DEFAULT_URL));
+    setRate(settings.get("default_hourly_rate")?.value ?? "");
+    setTax(settings.value("default_tax_rate", "19"));
+  }, [settings.settings]);
 
   const save = async () => {
-    setBusy(true);
-    setStatus(null);
-    const settings: Masked[] = [
+    const saved = await settings.save([
       { key: "api_key", secret: true, value: keyInput.trim() },
-      { key: "api_url", secret: false, value: url.trim() },
-      { key: "default_hourly_rate", secret: false, value: rate.trim() },
-      { key: "default_tax_rate", secret: false, value: tax.trim() },
-    ];
-    const res = await api(NS, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ settings }),
-    }).catch(() => null);
-    setBusy(false);
-    if (res === null) {
-      toast.danger("Speichern fehlgeschlagen — die API ist nicht erreichbar.");
-      return;
-    }
-    if (res.ok) {
-      setKeyInput("");
-      toast.success("Gespeichert.");
-      void load();
-    } else {
-      toast.danger(`Speichern fehlgeschlagen (HTTP ${res.status}).`);
-    }
+      { key: "api_url", value: url.trim() },
+      { key: "default_hourly_rate", value: rate.trim() },
+      { key: "default_tax_rate", value: tax.trim() },
+    ]);
+    if (saved) setKeyInput("");
   };
 
   const test = async () => {
     setTestResult("Teste …");
-    const res = await api("/lexware/admin/test").catch(() => null);
+    const res = await apiFetch("/lexware/admin/test").catch(() => null);
     if (res === null) {
       // Not a verdict on Lexware: the request never got as far as our API.
       setTestResult("Fehlgeschlagen: die API ist nicht erreichbar.");
@@ -102,22 +53,11 @@ export default function LexwareSettings() {
     }
   };
 
-  const secretHint = keyState?.configured ? `konfiguriert (…${keyState.last4 ?? "????"})` : "nicht konfiguriert";
-
-  if (!loaded) return <p><Spinner /></p>;
+  if (!settings.loaded) return <p><Spinner /></p>;
 
   return (
     <div className="lexware-settings space-y-4">
-      <label className="block">
-        <span className="text-sm">API-Key <em className="opacity-60">({secretHint})</em></span>
-        <input className="field-boxed"
-          type="password"
-          value={keyInput}
-          onChange={(e) => setKeyInput(e.target.value)}
-          placeholder="Neuen Schlüssel setzen (leer = behalten)"
-          autoComplete="off"
-        />
-      </label>
+      <SecretField label="API-Key" setting={settings.get("api_key")} value={keyInput} onChange={setKeyInput} placeholder="Neuen Schlüssel setzen (leer = behalten)" />
 
       <label className="block">
         <span className="text-sm">API-URL</span>
@@ -137,9 +77,9 @@ export default function LexwareSettings() {
 
       {/* The load failure stays in-flow (persistent state); the save outcome
           is a toast. Failures only, hence the danger hue. */}
-      {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
+      <Alert>{settings.error}</Alert>
       <div className="tds-toolbar">
-        <button className="btn btn-primary" type="button" onClick={save} disabled={busy}>Speichern</button>
+        <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={settings.busy}>Speichern</button>
         <button type="button" className="btn btn-ghost" onClick={test}>Verbindung testen</button>
       </div>
       {testResult ? <p className="text-sm opacity-80">{testResult}</p> : null}

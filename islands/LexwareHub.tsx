@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import { toast } from "@tracht-digital-solutions/tds-shared/components";
-import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
+import { Alert, TabPanel, Tabs, toast } from "@tracht-digital-solutions/tds-shared/components";
+import { apiFetch, sendJson } from "@tracht-digital-solutions/tds-shared/api";
 import {
   AnimatedItem,
   AnimatedList,
   Presence,
   TabIndicator,
 } from "@tracht-digital-solutions/tds-shared/motion/react";
-
-const api = apiFetch;
 
 interface Customer {
   id: number;
@@ -69,27 +67,22 @@ export default function LexwareHub() {
   ];
   return (
     <div className="lexware-hub">
-      <nav className="tds-toolbar" role="tablist">
-        {tabs.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className={tab === id ? "chip tds-tab chip-active" : "chip tds-tab"}
-            onClick={() => setTab(id)}
-          >
-            {label}
-            {tab === id ? <TabIndicator group="lexware" /> : null}
-          </button>
-        ))}
-      </nav>
-      <Presence view={tab} className="lexware-tabpanel">
-        {tab === "customers" ? <CustomersTab /> : null}
-        {tab === "time" ? <TimeTab /> : null}
-        {tab === "contacts" ? <ContactsTab /> : null}
-        {tab === "invoices" ? <InvoicesTab /> : null}
-      </Presence>
+      <Tabs
+        label="Lexware-Bereiche"
+        idPrefix="lexware"
+        tabs={tabs}
+        value={tab}
+        onChange={setTab}
+        decorate={(_id, active) => (active ? <TabIndicator group="lexware" /> : null)}
+      />
+      <TabPanel idPrefix="lexware" id={tab} active>
+        <Presence view={tab} className="lexware-tabpanel">
+          {tab === "customers" ? <CustomersTab /> : null}
+          {tab === "time" ? <TimeTab /> : null}
+          {tab === "contacts" ? <ContactsTab /> : null}
+          {tab === "invoices" ? <InvoicesTab /> : null}
+        </Presence>
+      </TabPanel>
     </div>
   );
 }
@@ -106,7 +99,7 @@ function CustomersTab() {
   const load = async () => {
     // apiFetch rejects when the request never reaches the API; uncaught, the
     // list read "Noch keine Kunden." and the rejection went unhandled.
-    const res = await api("/lexware/customers").catch(() => null);
+    const res = await apiFetch("/lexware/customers").catch(() => null);
     if (res === null) {
       setStatus("Kunden konnten nicht geladen werden — die API ist nicht erreichbar.");
       return;
@@ -119,7 +112,7 @@ function CustomersTab() {
   }, []);
 
   const open = async (id: number) => {
-    const res = await api(`/lexware/customers/${id}`).catch(() => null);
+    const res = await apiFetch(`/lexware/customers/${id}`).catch(() => null);
     if (res === null) {
       toast.danger("Kunde konnte nicht geladen werden — die API ist nicht erreichbar.");
       return;
@@ -129,11 +122,7 @@ function CustomersTab() {
 
   const addCustomer = async () => {
     if (name.trim() === "") return;
-    const res = await api("/lexware/customers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, default_hourly_rate: rate }),
-    }).catch(() => null);
+    const res = await sendJson("/lexware/customers", "POST", { name, email, default_hourly_rate: rate }).catch(() => null);
     if (res === null) {
       // The form keeps what was typed.
       toast.danger("Kunde konnte nicht angelegt werden — die API ist nicht erreichbar.");
@@ -151,7 +140,7 @@ function CustomersTab() {
   };
 
   const pushContact = async (id: number) => {
-    const res = await api(`/lexware/customers/${id}/push-contact`, { method: "POST" }).catch(() => null);
+    const res = await apiFetch(`/lexware/customers/${id}/push-contact`, { method: "POST" }).catch(() => null);
     if (res === null) {
       toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
       return;
@@ -210,7 +199,7 @@ function CustomersTab() {
           <button className="btn btn-primary" type="button" onClick={addCustomer}>Anlegen</button>
         </div>
         {/* Validation only now — outcomes go to the toast stack. */}
-        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
+        <Alert>{status}</Alert>
       </div>
 
       <div>
@@ -228,11 +217,7 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
 
   const addProject = async () => {
     if (title.trim() === "") return;
-    const res = await api(`/lexware/customers/${customer.id}/projects`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, hourly_rate: rate }),
-    }).catch(() => null);
+    const res = await sendJson(`/lexware/customers/${customer.id}/projects`, "POST", { title, hourly_rate: rate }).catch(() => null);
     if (res === null) {
       toast.danger("Projekt konnte nicht angelegt werden — die API ist nicht erreichbar.");
       return;
@@ -290,7 +275,7 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
   useEffect(() => {
     // A lost request leaves the picker empty instead of an unhandled rejection;
     // the tab's own list says the API is unreachable.
-    void api("/lexware/customers")
+    void apiFetch("/lexware/customers")
       .then(async (r) => {
         if (r.ok) setCustomers((await r.json()).customers ?? []);
       })
@@ -302,7 +287,7 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
       setProjects([]);
       return;
     }
-    void api(`/lexware/customers/${customerId}`)
+    void apiFetch(`/lexware/customers/${customerId}`)
       .then(async (r) => {
         if (r.ok) setProjects((await r.json()).projects ?? []);
       })
@@ -357,7 +342,7 @@ function TimeTab() {
     const q = new URLSearchParams();
     if (from) q.set("from", from);
     if (to) q.set("to", to);
-    const res = await api(`/lexware/time/unassigned?${q.toString()}`).catch(() => null);
+    const res = await apiFetch(`/lexware/time/unassigned?${q.toString()}`).catch(() => null);
     if (res === null) {
       // Uncaught, the table read "Keine offenen Einträge." and the rejection
       // went unhandled.
@@ -376,11 +361,7 @@ function TimeTab() {
       setStatus("Bitte zuerst ein Projekt wählen.");
       return;
     }
-    const res = await api("/lexware/time/assign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ timeEntryId: entryId, projectId }),
-    }).catch(() => null);
+    const res = await sendJson("/lexware/time/assign", "POST", { timeEntryId: entryId, projectId }).catch(() => null);
     if (res === null) {
       toast.danger("Zuordnung fehlgeschlagen — die API ist nicht erreichbar.");
       return;
@@ -409,7 +390,7 @@ function TimeTab() {
         <ProjectPicker projectId={projectId} onChange={setProjectId} />
       </div>
       {/* Validation only now — outcomes go to the toast stack. */}
-        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
+        <Alert>{status}</Alert>
       <table className="tds-table">
         <thead>
           <tr>
@@ -447,7 +428,7 @@ function ContactsTab() {
   const [status, setStatus] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await api("/lexware/leads").catch(() => null);
+    const res = await apiFetch("/lexware/leads").catch(() => null);
     if (res === null) {
       setStatus("Kontakt-Kandidaten konnten nicht geladen werden — die API ist nicht erreichbar.");
       return;
@@ -460,17 +441,13 @@ function ContactsTab() {
   }, []);
 
   const push = async (lead: Lead) => {
-    const res = await api("/lexware/leads/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const res = await sendJson("/lexware/leads/push", "POST", {
         source_type: lead.source_type,
         source_id: lead.source_id,
         name: lead.name,
         email: lead.email,
         company: lead.company,
-      }),
-    }).catch(() => null);
+      }).catch(() => null);
     if (res === null) {
       toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
       return;
@@ -485,7 +462,7 @@ function ContactsTab() {
     <div className="lexware-contacts">
       <p className="opacity-80">Kontakte aus Kontaktanfragen &amp; Tickets als Lexware-Kontakte anlegen.</p>
       {/* Validation only now — outcomes go to the toast stack. */}
-        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
+        <Alert>{status}</Alert>
       <table className="tds-table">
         <thead>
           <tr>
@@ -534,7 +511,7 @@ function InvoicesTab() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const load = async () => {
-    const res = await api("/lexware/invoices").catch(() => null);
+    const res = await apiFetch("/lexware/invoices").catch(() => null);
     if (res === null) {
       setStatus("Rechnungen konnten nicht geladen werden — die API ist nicht erreichbar.");
       return;
@@ -553,11 +530,7 @@ function InvoicesTab() {
     }
     setBusy(true);
     setStatus(null);
-    const res = await api("/lexware/invoices/from-project", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, from, to, finalize }),
-    }).catch(() => null);
+    const res = await sendJson("/lexware/invoices/from-project", "POST", { projectId, from, to, finalize }).catch(() => null);
     if (res === null) {
       setBusy(false);
       toast.danger("Rechnung fehlgeschlagen — die API ist nicht erreichbar.");
@@ -592,7 +565,7 @@ function InvoicesTab() {
         <button className="btn btn-primary" type="button" onClick={exportInvoice} disabled={busy}>Rechnung erstellen</button>
       </div>
       {/* Validation only now — outcomes go to the toast stack. */}
-        {status ? <p className="tds-alert tds-alert--danger" role="alert">{status}</p> : null}
+        <Alert>{status}</Alert>
 
       <h2>Bisherige Exporte</h2>
       {/* `tabIndex` + `role="region"` + a name: this table is pure data, so it

@@ -1,38 +1,20 @@
-import { useEffect, useState } from "react";
-import { Skeleton } from "@tracht-digital-solutions/tds-shared/components";
-import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
+import { SummaryMetric } from "@tracht-digital-solutions/tds-shared/components";
 
 interface Summary {
   configured: boolean;
   invoiceCount: number;
-  recent: Array<{ id: number; customer_name: string | null; created_at: string }>;
 }
 
 /**
- * Lexware widget body — shows the total invoice count exported to Lexware and
- * whether the API is configured. Same-origin fetch with credentials (the deploy
- * wires the gateway).
+ * Lexware widget body — the number of invoices exported to Lexware, and
+ * whether the integration is configured at all.
  */
 export default function WidgetBody() {
-  const [data, setData] = useState<Summary | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    apiFetch("/lexware/summary")
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d: Summary) => setData(d))
-      .catch(() => setError(true));
-  }, []);
-
-  if (error) return <p className="tds-widget__metric">—</p>;
-  if (!data) return <p className="tds-widget__metric" aria-busy="true"><Skeleton width="3ch" height="1.75rem" /></p>;
-
   return (
-    <div className="tds-stack">
-      <p className="tds-widget__metric">{data.invoiceCount}</p>
-      <p className="marginalia">
-        {data.configured ? "Rechnungen an Lexware" : "Lexware nicht konfiguriert"}
-      </p>
-    </div>
+    <SummaryMetric<Summary>
+      endpoint="/lexware/summary"
+      value={(d) => d.invoiceCount}
+      caption={(d) => (d.configured ? "Rechnungen an Lexware" : "Lexware nicht konfiguriert")}
+    />
   );
 }
