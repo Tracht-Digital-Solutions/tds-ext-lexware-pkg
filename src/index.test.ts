@@ -15,7 +15,7 @@ describe("identity", () => {
     expect(manifest.id).toBe("lexware");
   });
 
-  it("uses a slug-safe id — it becomes part of nav keys and route paths", () => {
+  it("uses a slug-safe id, it becomes part of nav keys and route paths", () => {
     expect(manifest.id).toMatch(/^[a-z][a-z0-9-]*$/);
   });
 
@@ -24,7 +24,7 @@ describe("identity", () => {
     expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
-  it("composes standalone — it declares no dependsOn", () => {
+  it("composes standalone, it declares no dependsOn", () => {
     // It reads other extensions' data defensively through the PHP SourceGateway
     // instead, so a product may compose it without tickets or contact-tickets.
     expect(manifest.dependsOn ?? []).toHaveLength(0);

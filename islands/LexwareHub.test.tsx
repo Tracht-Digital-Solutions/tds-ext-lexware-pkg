@@ -801,7 +801,7 @@ describe("when the API is unreachable", () => {
   it("says so instead of an empty customer list", async () => {
     unreachable(/^\/lexware\/customers$/, "GET");
     await open();
-    expect(await screen.findByText("Kunden konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+    expect(await screen.findByText("Kunden konnten nicht geladen werden, die API ist nicht erreichbar.")).toBeTruthy();
   });
 
   it("keeps a new customer's details when the create never arrives", async () => {
@@ -847,7 +847,7 @@ describe("when the API is unreachable", () => {
     unreachable(/^\/lexware\/time\/unassigned/, "GET");
     unreachable(/^\/lexware\/customers$/, "GET");
     await open("Zeit zuordnen");
-    expect(await screen.findByText("Zeiteinträge konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+    expect(await screen.findByText("Zeiteinträge konnten nicht geladen werden, die API ist nicht erreichbar.")).toBeTruthy();
   });
 
   it("says so when the picker's projects never arrive", async () => {
@@ -876,7 +876,7 @@ describe("when the API is unreachable", () => {
   it("says so instead of an empty lead list", async () => {
     unreachable(/^\/lexware\/leads$/, "GET");
     await open("Kontakte");
-    expect(await screen.findByText("Kontakt-Kandidaten konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+    expect(await screen.findByText("Kontakt-Kandidaten konnten nicht geladen werden, die API ist nicht erreichbar.")).toBeTruthy();
   });
 
   it("says so when a lead hand-off never arrives", async () => {
@@ -890,7 +890,7 @@ describe("when the API is unreachable", () => {
   it("says so instead of an empty export list", async () => {
     unreachable(/^\/lexware\/invoices$/, "GET");
     await open("Rechnungen");
-    expect(await screen.findByText("Rechnungen konnten nicht geladen werden — die API ist nicht erreichbar.")).toBeTruthy();
+    expect(await screen.findByText("Rechnungen konnten nicht geladen werden, die API ist nicht erreichbar.")).toBeTruthy();
   });
 
   it("frees the export button when the export never arrives", async () => {

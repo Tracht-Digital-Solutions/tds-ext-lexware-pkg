@@ -101,7 +101,7 @@ function CustomersTab() {
     // list read "Noch keine Kunden." and the rejection went unhandled.
     const res = await apiFetch("/lexware/customers").catch(() => null);
     if (res === null) {
-      setStatus("Kunden konnten nicht geladen werden — die API ist nicht erreichbar.");
+      setStatus("Kunden konnten nicht geladen werden, die API ist nicht erreichbar.");
       return;
     }
     setStatus(null);
@@ -114,7 +114,7 @@ function CustomersTab() {
   const open = async (id: number) => {
     const res = await apiFetch(`/lexware/customers/${id}`).catch(() => null);
     if (res === null) {
-      toast.danger("Kunde konnte nicht geladen werden — die API ist nicht erreichbar.");
+      toast.danger("Kunde konnte nicht geladen werden, die API ist nicht erreichbar.");
       return;
     }
     if (res.ok) setSelected(await res.json());
@@ -125,7 +125,7 @@ function CustomersTab() {
     const res = await sendJson("/lexware/customers", "POST", { name, email, default_hourly_rate: rate }).catch(() => null);
     if (res === null) {
       // The form keeps what was typed.
-      toast.danger("Kunde konnte nicht angelegt werden — die API ist nicht erreichbar.");
+      toast.danger("Kunde konnte nicht angelegt werden, die API ist nicht erreichbar.");
       return;
     }
     if (res.ok) {
@@ -142,7 +142,7 @@ function CustomersTab() {
   const pushContact = async (id: number) => {
     const res = await apiFetch(`/lexware/customers/${id}/push-contact`, { method: "POST" }).catch(() => null);
     if (res === null) {
-      toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
+      toast.danger("Hand-off an Lexware fehlgeschlagen, die API ist nicht erreichbar.");
       return;
     }
     const d = await res.json().catch(() => ({}));
@@ -219,7 +219,7 @@ function CustomerDetail({ customer, onChanged, onPush }: { customer: Customer; o
     if (title.trim() === "") return;
     const res = await sendJson(`/lexware/customers/${customer.id}/projects`, "POST", { title, hourly_rate: rate }).catch(() => null);
     if (res === null) {
-      toast.danger("Projekt konnte nicht angelegt werden — die API ist nicht erreichbar.");
+      toast.danger("Projekt konnte nicht angelegt werden, die API ist nicht erreichbar.");
       return;
     }
     if (res.ok) {
@@ -293,7 +293,7 @@ function ProjectPicker({ projectId, onChange }: { projectId: number | null; onCh
       })
       .catch(() => {
         setProjects([]);
-        toast.danger("Projekte konnten nicht geladen werden — die API ist nicht erreichbar.");
+        toast.danger("Projekte konnten nicht geladen werden, die API ist nicht erreichbar.");
       });
   }, [customerId]);
 
@@ -346,7 +346,7 @@ function TimeTab() {
     if (res === null) {
       // Uncaught, the table read "Keine offenen Einträge." and the rejection
       // went unhandled.
-      setStatus("Zeiteinträge konnten nicht geladen werden — die API ist nicht erreichbar.");
+      setStatus("Zeiteinträge konnten nicht geladen werden, die API ist nicht erreichbar.");
       return;
     }
     setStatus(null);
@@ -363,7 +363,7 @@ function TimeTab() {
     }
     const res = await sendJson("/lexware/time/assign", "POST", { timeEntryId: entryId, projectId }).catch(() => null);
     if (res === null) {
-      toast.danger("Zuordnung fehlgeschlagen — die API ist nicht erreichbar.");
+      toast.danger("Zuordnung fehlgeschlagen, die API ist nicht erreichbar.");
       return;
     }
     if (res.ok) {
@@ -430,7 +430,7 @@ function ContactsTab() {
   const load = async () => {
     const res = await apiFetch("/lexware/leads").catch(() => null);
     if (res === null) {
-      setStatus("Kontakt-Kandidaten konnten nicht geladen werden — die API ist nicht erreichbar.");
+      setStatus("Kontakt-Kandidaten konnten nicht geladen werden, die API ist nicht erreichbar.");
       return;
     }
     setStatus(null);
@@ -449,7 +449,7 @@ function ContactsTab() {
         company: lead.company,
       }).catch(() => null);
     if (res === null) {
-      toast.danger("Hand-off an Lexware fehlgeschlagen — die API ist nicht erreichbar.");
+      toast.danger("Hand-off an Lexware fehlgeschlagen, die API ist nicht erreichbar.");
       return;
     }
     const d = await res.json().catch(() => ({}));
@@ -513,7 +513,7 @@ function InvoicesTab() {
   const load = async () => {
     const res = await apiFetch("/lexware/invoices").catch(() => null);
     if (res === null) {
-      setStatus("Rechnungen konnten nicht geladen werden — die API ist nicht erreichbar.");
+      setStatus("Rechnungen konnten nicht geladen werden, die API ist nicht erreichbar.");
       return;
     }
     setStatus(null);
@@ -533,7 +533,7 @@ function InvoicesTab() {
     const res = await sendJson("/lexware/invoices/from-project", "POST", { projectId, from, to, finalize }).catch(() => null);
     if (res === null) {
       setBusy(false);
-      toast.danger("Rechnung fehlgeschlagen — die API ist nicht erreichbar.");
+      toast.danger("Rechnung fehlgeschlagen, die API ist nicht erreichbar.");
       return;
     }
     const d = await res.json().catch(() => ({}));

@@ -30,6 +30,7 @@ composer install && composer test   # phpunit; DB integration only with TDS_TEST
 - Call the API with `apiFetch`, never a relative `fetch`.
 - Every route change updates `php/docs/api.php`. Migration classes are prefixed `Lexware`.
 - Stay in the `0.2.x` line (admin product pins `^0.2.x`). Versions move via the release workflow only.
+- Follows the TDS quality standard (`../tds-ops/standards/quality.md`): no AI slop, clean code.
 
 ## Topic files
 

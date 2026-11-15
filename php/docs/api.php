@@ -107,7 +107,7 @@ return [
         'pattern' => '/lexware/customers/{id:[0-9]+}',
         'tag' => 'Verzeichnis',
         'summary' => 'Kunden löschen',
-        'description' => 'Nur lokal — ein bereits nach Lexware übertragener Kontakt bleibt '
+        'description' => 'Nur lokal, ein bereits nach Lexware übertragener Kontakt bleibt '
             . 'dort bestehen.',
         'permission' => 'lexware:write',
         'params' => [$customerId],
@@ -197,7 +197,7 @@ return [
         'tag' => 'Kontakte',
         'summary' => 'Kontaktanfragen und Tickets als Lead-Kandidaten',
         'description' => 'Zieht Absender aus dem Kontakt-Posteingang und den Tickets zusammen '
-            . 'und trägt je Eintrag die bereits übertragene `lexware_contact_id` nach — '
+            . 'und trägt je Eintrag die bereits übertragene `lexware_contact_id` nach: '
             . 'so ist auf einen Blick zu sehen, wer schon in Lexware steht.',
         'permission' => 'lexware:read',
         'responses' => [
@@ -211,7 +211,7 @@ return [
         'pattern' => '/lexware/customers/{id:[0-9]+}/push-contact',
         'tag' => 'Kontakte',
         'summary' => 'Verzeichniskunden als Kontakt nach Lexware übertragen',
-        'description' => 'Legt bei Lexware an und merkt sich die Kontakt-Id am Kunden — '
+        'description' => 'Legt bei Lexware an und merkt sich die Kontakt-Id am Kunden: '
             . 'spätere Rechnungen hängen sich daran. Ein Fehler von Lexware kommt als '
             . '**502** zurück, nicht als 500: die Anfrage war in Ordnung.',
         'permission' => 'lexware:write',
@@ -221,7 +221,7 @@ return [
             ['status' => 401, 'description' => 'Keine Sitzung.'],
             ['status' => 403, 'description' => 'Kein `lexware:write`.'],
             ['status' => 404, 'description' => 'Unbekannter Kunde.'],
-            ['status' => 502, 'description' => 'Lexware hat die Anlage abgelehnt — die Meldung wird wörtlich durchgereicht.'],
+            ['status' => 502, 'description' => 'Lexware hat die Anlage abgelehnt, die Meldung wird wörtlich durchgereicht.'],
             ['status' => 503, 'description' => 'Kein Lexware-API-Key konfiguriert.'],
         ],
     ],
@@ -236,8 +236,8 @@ return [
         'params' => [
             ['in' => 'body', 'name' => 'source_type', 'type' => 'contact_message|ticket', 'required' => true, 'description' => 'Woher der Lead stammt.'],
             ['in' => 'body', 'name' => 'source_id', 'type' => 'int', 'required' => true, 'description' => 'Id in der Quelle.'],
-            ['in' => 'body', 'name' => 'name', 'type' => 'string', 'description' => 'Name — mindestens Name oder E-Mail muss vorhanden sein.'],
-            ['in' => 'body', 'name' => 'email', 'type' => 'string', 'description' => 'E-Mail — mindestens Name oder E-Mail muss vorhanden sein.'],
+            ['in' => 'body', 'name' => 'name', 'type' => 'string', 'description' => 'Name, mindestens Name oder E-Mail muss vorhanden sein.'],
+            ['in' => 'body', 'name' => 'email', 'type' => 'string', 'description' => 'E-Mail, mindestens Name oder E-Mail muss vorhanden sein.'],
             ['in' => 'body', 'name' => 'company', 'type' => 'string', 'description' => 'Optional, auf 250 Zeichen gekürzt.'],
         ],
         'responses' => [
