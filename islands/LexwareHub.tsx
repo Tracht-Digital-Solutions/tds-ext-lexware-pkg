@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, TabPanel, Tabs, toast } from "@tracht-digital-solutions/tds-shared/components";
-import { apiFetch, sendJson } from "@tracht-digital-solutions/tds-shared/api";
+import { Alert, TabPanel, Tabs, toast } from "@tracht-digital-labs/tds-shared/components";
+import { apiFetch, sendJson } from "@tracht-digital-labs/tds-shared/api";
 import {
   AnimatedItem,
   AnimatedList,
   Presence,
   TabIndicator,
-} from "@tracht-digital-solutions/tds-shared/motion/react";
+} from "@tracht-digital-labs/tds-shared/motion/react";
 
 interface Customer {
   id: number;

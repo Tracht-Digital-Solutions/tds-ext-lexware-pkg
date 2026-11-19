@@ -8,11 +8,11 @@
 const pathOf = (url: string) => String(url).replace(/^https?:\/\/[^/]+/i, "");
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { primeRuntimeConfig } from "@tracht-digital-solutions/tds-shared/api";
+import { primeRuntimeConfig } from "@tracht-digital-labs/tds-shared/api";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LexwareSettings from "./LexwareSettings";
-import { TOAST_EVENT } from "@tracht-digital-solutions/tds-shared/toast";
+import { TOAST_EVENT } from "@tracht-digital-labs/tds-shared/toast";
 
 /**
  * The Lexware credentials panel, backed by the core runtime settings store

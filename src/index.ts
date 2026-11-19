@@ -1,4 +1,4 @@
-import { defineExtension } from "@tracht-digital-solutions/tds-frontend-contract";
+import { defineExtension } from "@tracht-digital-labs/tds-frontend-contract";
 
 /**
  * Lexware billing-hub manifest. Admin-only extension: a customer/project
@@ -29,7 +29,7 @@ export default defineExtension({
     {
       id: "lexware-invoices",
       title: "Lexware-Rechnungen",
-      island: "@tracht-digital-solutions/tds-ext-lexware/widgets/Widget.astro",
+      island: "@tracht-digital-labs/tds-ext-lexware/widgets/Widget.astro",
       size: "sm",
       permission: "lexware:read",
       dataEndpoint: "/lexware/summary",
@@ -40,14 +40,14 @@ export default defineExtension({
     {
       id: "lexware",
       label: "Lexware",
-      island: "@tracht-digital-solutions/tds-ext-lexware/islands/Settings.astro",
+      island: "@tracht-digital-labs/tds-ext-lexware/islands/Settings.astro",
       order: 20,
     },
   ],
   routes: [
     {
       pattern: "/lexware",
-      entrypoint: "@tracht-digital-solutions/tds-ext-lexware/pages/Index.astro",
+      entrypoint: "@tracht-digital-labs/tds-ext-lexware/pages/Index.astro",
       permission: "lexware:read",
     },
   ],

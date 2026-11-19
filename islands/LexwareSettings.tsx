@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Alert, Spinner } from "@tracht-digital-solutions/tds-shared/components";
-import { apiFetch } from "@tracht-digital-solutions/tds-shared/api";
-import { SecretField, useRuntimeSettings } from "@tracht-digital-solutions/tds-shared/admin";
+import { Alert, Spinner } from "@tracht-digital-labs/tds-shared/components";
+import { apiFetch } from "@tracht-digital-labs/tds-shared/api";
+import { SecretField, useRuntimeSettings } from "@tracht-digital-labs/tds-shared/admin";
 
 const DEFAULT_URL = "https://api.lexware.io/v1";
 
